@@ -121,49 +121,71 @@ Um sistema completo de gestão multi-tenant com controle granular de permissões
 - **Usuários**: até 50
 - **Módulos inclusos**: Todos os módulos
 
-## 🛠️ Instalação e Desenvolvimento
+## 🛠️ Instalação e Desenvolvimento Local
 
 ### Pré-requisitos
-- Node.js 20+
-- PostgreSQL 12+
+- **Node.js 20+**
+- **PostgreSQL 12+**
 - Git
 
-### Instalação Rápida
-```bash
-# Clonar repositório
-git clone <url-do-repositorio>
-cd tenant-management
+### Passo a Passo
 
-# Instalar dependências
-npm install
+1. **Instalar Dependências**
+   ```bash
+   npm install
+   ```
+   *Nota: O projeto requer `pg` e `dotenv` (já configurados).*
 
-# Configurar ambiente
-cp .env.example .env
-# Editar .env com suas configurações
+2. **Configurar Ambiente**
+   Copie o arquivo de exemplo e ajuste conforme seu ambiente:
+   ```bash
+   cp .env.example .env
+   ```
+   Certifique-se de que as credenciais do banco de dados no `.env` correspondam ao seu PostgreSQL local.
 
-# Configurar banco de dados
-npm run db:push
+3. **Banco de Dados**
+   Execute as migrações para criar as tabelas:
+   ```bash
+   npm run db:push
+   ```
 
-# Iniciar aplicação
-npm run dev
-```
-
-### Variáveis de Ambiente
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/db"
-SESSION_SECRET="your-secret-key"
-NODE_ENV="development"
-PORT=5000
-```
+4. **Iniciar Aplicação**
+   ```bash
+   npm run dev
+   ```
+   A aplicação estará disponível em `http://localhost:5000`.
 
 ### Scripts Disponíveis
 ```bash
 npm run dev          # Desenvolvimento
 npm run build        # Build para produção
-npm run start        # Executar em produção
+npm run start        # Executar em produção (requer build)
 npm run check        # Verificar tipos TypeScript
-npm run db:push      # Aplicar mudanças no banco
-```
+### Comandos de Manutenção
+
+O projeto inclui scripts úteis para gerenciamento do banco de dados:
+
+- **Resetar Banco de Dados** (Cuidado: Apaga tudo!):
+  ```bash
+  npm run db:reset
+  ```
+  Isso recria o schema e popula com os dados iniciais.
+
+- **Popular Dados Básicos**:
+  ```bash
+  npm run db:seed
+  ```
+  Use se o schema já existir mas faltarem dados base (Planos, Módulos).
+
+## 🔐 Credenciais Administrativas (Padrão)
+
+Ao resetar o banco ou na primeira execução com seed, o sistema cria o seguinte usuário admin:
+
+| Tenant | Usuário | Senha     |
+|--------|---------|-----------|
+| Admin  | admin   | admin123  |
+
+Recomenda-se alterar a senha após o primeiro login.
 
 ## 📖 Documentação Técnica
 
@@ -283,7 +305,7 @@ docker run -p 5000:5000 tenant-management
 ```
 
 ### VPS/Servidor
-Consulte `DEPLOY_LOCALHOST.md` para instruções completas de instalação em servidor próprio.
+Consulte `docs/archive/DEPLOY_LOCALHOST.md` para instruções antigas de instalação em servidor próprio.
 
 ## 📝 Contribuição
 

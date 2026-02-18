@@ -13,27 +13,28 @@ import { insertSupplierSchema, Supplier } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { BulkImportModal } from "@/components/bulk-import-modal";
 
 export default function SuppliersPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-  
+
   // Fetch suppliers
   const { data: suppliers, isLoading } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
   });
-  
+
   // Filter suppliers based on search query
   const filteredSuppliers = suppliers
-    ? suppliers.filter(supplier => 
-        supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        supplier.cnpj.includes(searchQuery) ||
-        (supplier.internalCode && supplier.internalCode.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? suppliers.filter(supplier =>
+      supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      supplier.cnpj.includes(searchQuery) ||
+      (supplier.internalCode && supplier.internalCode.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
     : [];
-  
+
   // Form for adding/editing suppliers
   const form = useForm<Omit<Supplier, "id" | "tenantId">>({
     resolver: zodResolver(insertSupplierSchema.omit({ tenantId: true })),
@@ -45,7 +46,7 @@ export default function SuppliersPage() {
       internalCode: "",
     },
   });
-  
+
   // Set form values when editing
   const handleEdit = (supplier: Supplier) => {
     setEditingSupplier(supplier);
@@ -58,7 +59,7 @@ export default function SuppliersPage() {
     });
     setIsDialogOpen(true);
   };
-  
+
   // Reset form when adding new
   const handleAddNew = () => {
     setEditingSupplier(null);
@@ -71,7 +72,7 @@ export default function SuppliersPage() {
     });
     setIsDialogOpen(true);
   };
-  
+
   // Mutation for adding/editing supplier
   const supplierMutation = useMutation({
     mutationFn: async (data: Omit<Supplier, "id" | "tenantId">) => {
@@ -88,8 +89,8 @@ export default function SuppliersPage() {
       setIsDialogOpen(false);
       toast({
         title: editingSupplier ? "Fornecedor atualizado" : "Fornecedor adicionado",
-        description: editingSupplier 
-          ? "O fornecedor foi atualizado com sucesso." 
+        description: editingSupplier
+          ? "O fornecedor foi atualizado com sucesso."
           : "O fornecedor foi adicionado com sucesso.",
       });
     },
@@ -101,7 +102,7 @@ export default function SuppliersPage() {
       });
     },
   });
-  
+
   // Delete supplier mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -122,13 +123,13 @@ export default function SuppliersPage() {
       });
     },
   });
-  
+
   const handleDelete = (id: number) => {
     if (window.confirm("Tem certeza que deseja remover este fornecedor?")) {
       deleteMutation.mutate(id);
     }
   };
-  
+
   const onSubmit = (data: Omit<Supplier, "id" | "tenantId">) => {
     supplierMutation.mutate(data);
   };
@@ -138,12 +139,15 @@ export default function SuppliersPage() {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-medium">Fornecedores</h1>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Fornecedor
-          </Button>
+          <div className="flex gap-2">
+            <BulkImportModal entity="suppliers" />
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Fornecedor
+            </Button>
+          </div>
         </div>
-        
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Buscar Fornecedores</CardTitle>
@@ -151,7 +155,7 @@ export default function SuppliersPage() {
           <CardContent>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input 
+              <Input
                 placeholder="Buscar por nome, CNPJ ou código interno..."
                 className="pl-10"
                 value={searchQuery}
@@ -160,7 +164,7 @@ export default function SuppliersPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -185,7 +189,7 @@ export default function SuppliersPage() {
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                           <Building2 className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                          {searchQuery 
+                          {searchQuery
                             ? "Nenhum fornecedor encontrado com os critérios de busca"
                             : "Nenhum fornecedor cadastrado ainda"}
                         </TableCell>
@@ -199,16 +203,16 @@ export default function SuppliersPage() {
                           <TableCell>{supplier.address || "-"}</TableCell>
                           <TableCell>{supplier.internalCode || "-"}</TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleEdit(supplier)}
                               disabled={supplierMutation.isPending}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="icon"
                               onClick={() => handleDelete(supplier.id)}
                               disabled={deleteMutation.isPending}
@@ -226,7 +230,7 @@ export default function SuppliersPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -234,7 +238,7 @@ export default function SuppliersPage() {
               {editingSupplier ? "Editar Fornecedor" : "Novo Fornecedor"}
             </DialogTitle>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -250,7 +254,7 @@ export default function SuppliersPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="cnpj"
@@ -264,7 +268,7 @@ export default function SuppliersPage() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -279,7 +283,7 @@ export default function SuppliersPage() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="internalCode"
@@ -294,7 +298,7 @@ export default function SuppliersPage() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="address"
@@ -308,7 +312,7 @@ export default function SuppliersPage() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
                   type="button"
@@ -318,7 +322,7 @@ export default function SuppliersPage() {
                 >
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   type="submit"
                   disabled={supplierMutation.isPending}
                 >

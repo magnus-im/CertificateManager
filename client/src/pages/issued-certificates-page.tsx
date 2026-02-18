@@ -9,23 +9,23 @@ import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/
 import { SafeSelectItem } from "@/components/ui/safe-select-item";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Loader2, 
-  FileOutput, 
-  Plus, 
-  Search, 
-  Eye, 
-  Download, 
-  Calendar, 
+import {
+  Loader2,
+  FileOutput,
+  Plus,
+  Search,
+  Eye,
+  Download,
+  Calendar,
   FileText,
-  Trash2 
+  Trash2
 } from "lucide-react";
 import { IssuedCertificate, EntryCertificate, Client, Supplier, Manufacturer } from "@shared/schema";
 import { IssueCertificateForm } from "@/components/certificates/issue-certificate-form";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -36,6 +36,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { queryClient } from "@/lib/queryClient";
+
+interface EnrichedEntryCertificate extends EntryCertificate {
+  productName?: string;
+  manufacturerName?: string;
+  supplierName?: string;
+  currentBalance?: string;
+  results?: any[];
+}
 
 export default function IssuedCertificatesPage() {
   const { toast } = useToast();
@@ -52,7 +60,7 @@ export default function IssuedCertificatesPage() {
     invoiceNumber: "",
     customLot: "",
   });
-  
+
   // Estado dos filtros para boletins de entrada
   const [entryCertFilters, setEntryCertFilters] = useState({
     manufacturerId: "",
@@ -62,7 +70,7 @@ export default function IssuedCertificatesPage() {
     supplierLot: "",
     entryDate: "",
   });
-  
+
   // Fetch issued certificates
   const {
     data: issuedCertificates,
@@ -71,89 +79,89 @@ export default function IssuedCertificatesPage() {
   } = useQuery<IssuedCertificate[]>({
     queryKey: ["/api/issued-certificates"],
   });
-  
+
   // Fetch entry certificates for selection
-  const { data: entryCertificates, isLoading: isLoadingEntries } = useQuery<EntryCertificate[]>({
+  const { data: entryCertificates, isLoading: isLoadingEntries } = useQuery<EnrichedEntryCertificate[]>({
     queryKey: ["/api/entry-certificates"],
   });
-  
+
   // Fetch clients for filtering
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
-  
+
   // Fetch suppliers for filtering
   const { data: suppliers } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
   });
-  
+
   // Fetch manufacturers for filtering
   const { data: manufacturers } = useQuery<Manufacturer[]>({
     queryKey: ["/api/manufacturers"],
   });
-  
+
   // Filter certificates based on filter criteria
-  const filteredCertificates = issuedCertificates 
+  const filteredCertificates = issuedCertificates
     ? issuedCertificates.filter(cert => {
-        let matches = true;
-        
-        if (filters.clientId && cert.clientId.toString() !== filters.clientId) {
+      let matches = true;
+
+      if (filters.clientId && cert.clientId.toString() !== filters.clientId) {
+        matches = false;
+      }
+
+      if (filters.productId && cert.productName &&
+        !cert.productName.toLowerCase().includes(filters.productId.toLowerCase())) {
+        matches = false;
+      }
+
+      if (filters.invoiceNumber &&
+        !cert.invoiceNumber.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) {
+        matches = false;
+      }
+
+      if (filters.customLot &&
+        !cert.customLot.toLowerCase().includes(filters.customLot.toLowerCase())) {
+        matches = false;
+      }
+
+      if (filters.startDate) {
+        const certDate = new Date(cert.issueDate);
+        const startDate = new Date(filters.startDate);
+        if (certDate < startDate) {
           matches = false;
         }
-        
-        if (filters.productId && cert.productName && 
-            !cert.productName.toLowerCase().includes(filters.productId.toLowerCase())) {
+      }
+
+      if (filters.endDate) {
+        const certDate = new Date(cert.issueDate);
+        const endDate = new Date(filters.endDate);
+        endDate.setHours(23, 59, 59);
+        if (certDate > endDate) {
           matches = false;
         }
-        
-        if (filters.invoiceNumber && 
-            !cert.invoiceNumber.toLowerCase().includes(filters.invoiceNumber.toLowerCase())) {
-          matches = false;
-        }
-        
-        if (filters.customLot && 
-            !cert.customLot.toLowerCase().includes(filters.customLot.toLowerCase())) {
-          matches = false;
-        }
-        
-        if (filters.startDate) {
-          const certDate = new Date(cert.issueDate);
-          const startDate = new Date(filters.startDate);
-          if (certDate < startDate) {
-            matches = false;
-          }
-        }
-        
-        if (filters.endDate) {
-          const certDate = new Date(cert.issueDate);
-          const endDate = new Date(filters.endDate);
-          endDate.setHours(23, 59, 59);
-          if (certDate > endDate) {
-            matches = false;
-          }
-        }
-        
-        return matches;
-      })
+      }
+
+      return matches;
+    })
     : [];
-    
+
   // Filter entry certificates based on filter criteria
   const filteredEntryCertificates = useMemo(() => {
     if (!entryCertificates) return [];
-    
-    return entryCertificates.filter(cert => {
+
+    return entryCertificates.filter((cert: EnrichedEntryCertificate) => {
       let matches = true;
-      
+
       // Filtro por fabricante
       if (entryCertFilters.manufacturerId && cert.manufacturerId.toString() !== entryCertFilters.manufacturerId) {
         matches = false;
       }
-      
+
       // Filtro por fornecedor
       if (entryCertFilters.supplierId && cert.supplierId.toString() !== entryCertFilters.supplierId) {
         matches = false;
       }
-      
+
       // Filtro por nome do produto (busca parcial case-insensitive)
       if (entryCertFilters.productName && cert.productName) {
         const productNameLower = cert.productName.toLowerCase();
@@ -162,7 +170,7 @@ export default function IssuedCertificatesPage() {
           matches = false;
         }
       }
-      
+
       // Filtro por lote interno (busca parcial case-insensitive)
       if (entryCertFilters.internalLot && cert.internalLot) {
         const internalLotLower = cert.internalLot.toLowerCase();
@@ -171,7 +179,7 @@ export default function IssuedCertificatesPage() {
           matches = false;
         }
       }
-      
+
       // Filtro por lote do fornecedor (busca parcial case-insensitive)
       if (entryCertFilters.supplierLot && cert.supplierLot) {
         const supplierLotLower = cert.supplierLot.toLowerCase();
@@ -180,7 +188,7 @@ export default function IssuedCertificatesPage() {
           matches = false;
         }
       }
-      
+
       // Filtro por data de entrada
       if (entryCertFilters.entryDate) {
         const entryDate = new Date(cert.entryDate);
@@ -192,22 +200,22 @@ export default function IssuedCertificatesPage() {
           matches = false;
         }
       }
-      
+
       return matches;
     });
   }, [entryCertificates, entryCertFilters]);
-  
+
   // Handle opening the issue dialog
   const handleIssueNew = () => {
     setSelectedCertificateId(null);
     setIsDialogOpen(true);
   };
-  
+
   // Handle viewing a certificate
   const handleView = (id: number) => {
     window.location.href = `/issued-certificates/${id}`;
   };
-  
+
   // Handle downloading a certificate
   const handleDownload = (id: number) => {
     window.location.href = `/issued-certificates/${id}`;
@@ -216,13 +224,13 @@ export default function IssuedCertificatesPage() {
       description: "Você será redirecionado para a página de detalhes onde poderá baixar o PDF.",
     });
   };
-  
+
   // Handle selecting an entry certificate to issue from
   const handleSelectEntry = (id: number) => {
     setSelectedEntryId(id);
     setIsDialogOpen(true);
   };
-  
+
   // Handle filter changes
   const handleFilterChange = (field: string, value: string) => {
     setFilters(prev => ({
@@ -230,12 +238,12 @@ export default function IssuedCertificatesPage() {
       [field]: value,
     }));
   };
-  
+
   // Apply filters
   const applyFilters = () => {
     // Filters are already applied in the filtered certificates
   };
-  
+
   // Clear all filters
   const clearFilters = () => {
     setFilters({
@@ -247,14 +255,14 @@ export default function IssuedCertificatesPage() {
       customLot: "",
     });
   };
-  
+
   // Mutation para excluir o certificado
   const deleteMutation = useMutation({
     mutationFn: async (certificateId: number) => {
       const response = await fetch(`/api/issued-certificates/${certificateId}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         // Tentar obter detalhes do erro se disponível
         try {
@@ -265,7 +273,7 @@ export default function IssuedCertificatesPage() {
           throw new Error(`Erro ao excluir o certificado: ${response.status} ${response.statusText}`);
         }
       }
-      
+
       // Não tentamos transformar em JSON para respostas 204 No Content
       // apenas retornamos true para indicar sucesso
       return true;
@@ -286,13 +294,13 @@ export default function IssuedCertificatesPage() {
       });
     }
   });
-  
+
   // Iniciar o processo de exclusão (mostra o diálogo de confirmação)
   const handleDelete = (id: number) => {
     setCertificateToDelete(id);
     setIsDeleteDialogOpen(true);
   };
-  
+
   // Confirmar a exclusão
   const confirmDelete = () => {
     if (certificateToDelete) {
@@ -301,7 +309,7 @@ export default function IssuedCertificatesPage() {
       setCertificateToDelete(null);
     }
   };
-  
+
   return (
     <Layout>
       <div className="p-6">
@@ -312,7 +320,7 @@ export default function IssuedCertificatesPage() {
             Emitir Boletim
           </Button>
         </div>
-        
+
         {/* Filter Panel */}
         <Card className="mb-6">
           <CardHeader>
@@ -339,7 +347,7 @@ export default function IssuedCertificatesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-500 mb-1 block">Produto</label>
                 <Input
@@ -348,7 +356,7 @@ export default function IssuedCertificatesPage() {
                   onChange={(e) => handleFilterChange('productId', e.target.value)}
                 />
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-500 mb-1 block">Nota Fiscal</label>
                 <Input
@@ -358,7 +366,7 @@ export default function IssuedCertificatesPage() {
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-500 mb-1 block">Lote Personalizado</label>
@@ -368,7 +376,7 @@ export default function IssuedCertificatesPage() {
                   onChange={(e) => handleFilterChange('customLot', e.target.value)}
                 />
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-500 mb-1 block">Data Inicial</label>
                 <Input
@@ -377,7 +385,7 @@ export default function IssuedCertificatesPage() {
                   onChange={(e) => handleFilterChange('startDate', e.target.value)}
                 />
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-500 mb-1 block">Data Final</label>
                 <Input
@@ -387,7 +395,7 @@ export default function IssuedCertificatesPage() {
                 />
               </div>
             </div>
-            
+
             <div className="mt-4 flex justify-end">
               <Button
                 variant="outline"
@@ -402,7 +410,7 @@ export default function IssuedCertificatesPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Certificates Table */}
         <Card>
           <CardContent className="p-0">
@@ -468,7 +476,7 @@ export default function IssuedCertificatesPage() {
             )}
           </CardContent>
         </Card>
-        
+
         {/* Select Entry Certificate Dialog */}
         {isDialogOpen && !selectedEntryId && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -480,7 +488,7 @@ export default function IssuedCertificatesPage() {
                 <p className="text-sm text-gray-500">
                   Selecione um boletim de entrada para emitir um novo boletim para cliente.
                 </p>
-                
+
                 {/* Filtros para boletins de entrada */}
                 <Card className="p-4">
                   <h3 className="mb-3 text-sm font-medium">Filtros</h3>
@@ -490,8 +498,8 @@ export default function IssuedCertificatesPage() {
                       <Label htmlFor="manufacturerFilter">Fabricante</Label>
                       <Select
                         value={entryCertFilters.manufacturerId}
-                        onValueChange={(value) => 
-                          setEntryCertFilters({...entryCertFilters, manufacturerId: value})
+                        onValueChange={(value) =>
+                          setEntryCertFilters({ ...entryCertFilters, manufacturerId: value })
                         }
                       >
                         <SelectTrigger id="manufacturerFilter">
@@ -507,14 +515,14 @@ export default function IssuedCertificatesPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     {/* Filtro por Fornecedor */}
                     <div className="space-y-2">
                       <Label htmlFor="supplierFilter">Fornecedor</Label>
                       <Select
                         value={entryCertFilters.supplierId}
-                        onValueChange={(value) => 
-                          setEntryCertFilters({...entryCertFilters, supplierId: value})
+                        onValueChange={(value) =>
+                          setEntryCertFilters({ ...entryCertFilters, supplierId: value })
                         }
                       >
                         <SelectTrigger id="supplierFilter">
@@ -530,7 +538,7 @@ export default function IssuedCertificatesPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     {/* Filtro por Produto (busca por texto) */}
                     <div className="space-y-2">
                       <Label htmlFor="productFilter">Produto</Label>
@@ -538,12 +546,12 @@ export default function IssuedCertificatesPage() {
                         id="productFilter"
                         placeholder="Buscar por nome de produto"
                         value={entryCertFilters.productName}
-                        onChange={(e) => 
-                          setEntryCertFilters({...entryCertFilters, productName: e.target.value})
+                        onChange={(e) =>
+                          setEntryCertFilters({ ...entryCertFilters, productName: e.target.value })
                         }
                       />
                     </div>
-                    
+
                     {/* Filtro por Lote Interno */}
                     <div className="space-y-2">
                       <Label htmlFor="internalLotFilter">Lote Interno</Label>
@@ -551,12 +559,12 @@ export default function IssuedCertificatesPage() {
                         id="internalLotFilter"
                         placeholder="Lote interno"
                         value={entryCertFilters.internalLot}
-                        onChange={(e) => 
-                          setEntryCertFilters({...entryCertFilters, internalLot: e.target.value})
+                        onChange={(e) =>
+                          setEntryCertFilters({ ...entryCertFilters, internalLot: e.target.value })
                         }
                       />
                     </div>
-                    
+
                     {/* Filtro por Lote do Fornecedor */}
                     <div className="space-y-2">
                       <Label htmlFor="supplierLotFilter">Lote do Fornecedor</Label>
@@ -564,12 +572,12 @@ export default function IssuedCertificatesPage() {
                         id="supplierLotFilter"
                         placeholder="Lote do fornecedor"
                         value={entryCertFilters.supplierLot}
-                        onChange={(e) => 
-                          setEntryCertFilters({...entryCertFilters, supplierLot: e.target.value})
+                        onChange={(e) =>
+                          setEntryCertFilters({ ...entryCertFilters, supplierLot: e.target.value })
                         }
                       />
                     </div>
-                    
+
                     {/* Filtro por período - Data de Entrada */}
                     <div className="space-y-2">
                       <Label htmlFor="entryDateFilter">Data de Entrada</Label>
@@ -577,16 +585,16 @@ export default function IssuedCertificatesPage() {
                         id="entryDateFilter"
                         type="date"
                         value={entryCertFilters.entryDate}
-                        onChange={(e) => 
-                          setEntryCertFilters({...entryCertFilters, entryDate: e.target.value})
+                        onChange={(e) =>
+                          setEntryCertFilters({ ...entryCertFilters, entryDate: e.target.value })
                         }
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end mt-4">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => setEntryCertFilters({
                         manufacturerId: "",
@@ -602,7 +610,7 @@ export default function IssuedCertificatesPage() {
                     </Button>
                   </div>
                 </Card>
-                
+
                 {isLoadingEntries ? (
                   <div className="flex justify-center items-center h-64">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -616,36 +624,46 @@ export default function IssuedCertificatesPage() {
                           <TableHead>Lote Interno</TableHead>
                           <TableHead>Data Entrada</TableHead>
                           <TableHead>Validade</TableHead>
+                          <TableHead>Saldo</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Ação</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredEntryCertificates.map((cert) => (
-                          <TableRow key={cert.id}>
-                            <TableCell>{cert.productName || `Produto #${cert.productId}`}</TableCell>
-                            <TableCell>{cert.internalLot}</TableCell>
-                            <TableCell>{formatDate(cert.entryDate)}</TableCell>
-                            <TableCell>{formatDate(cert.expirationDate)}</TableCell>
-                            <TableCell>
-                              {cert.status === 'Aprovado' ? (
-                                <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Aprovado</Badge>
-                              ) : (
-                                <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Reprovado</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="default" 
-                                size="sm"
-                                disabled={cert.status !== 'Aprovado'}
-                                onClick={() => handleSelectEntry(cert.id)}
-                              >
-                                Selecionar
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {filteredEntryCertificates.map((cert: EnrichedEntryCertificate) => {
+                          // Filter out if balance is 0 or less (redundant if filtered earlier, but safe)
+                          const balance = Number(cert.currentBalance || cert.receivedQuantity);
+                          if (balance <= 0) return null;
+
+                          return (
+                            <TableRow key={cert.id}>
+                              <TableCell>{cert.productName || `Produto #${cert.productId}`}</TableCell>
+                              <TableCell>{cert.internalLot}</TableCell>
+                              <TableCell>{formatDate(cert.entryDate)}</TableCell>
+                              <TableCell>{formatDate(cert.expirationDate)}</TableCell>
+                              <TableCell>
+                                {balance.toFixed(2)} {cert.measureUnit}
+                              </TableCell>
+                              <TableCell>
+                                {cert.status === 'Aprovado' ? (
+                                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Aprovado</Badge>
+                                ) : (
+                                  <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Reprovado</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  disabled={cert.status !== 'Aprovado'}
+                                  onClick={() => handleSelectEntry(cert.id)}
+                                >
+                                  Selecionar
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -655,7 +673,7 @@ export default function IssuedCertificatesPage() {
                     <p className="text-gray-500">Nenhum boletim de entrada disponível.</p>
                   </div>
                 )}
-                
+
                 <div className="flex justify-end mt-4">
                   <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancelar
@@ -665,7 +683,7 @@ export default function IssuedCertificatesPage() {
             </DialogContent>
           </Dialog>
         )}
-        
+
         {/* Issue Certificate Dialog */}
         {isDialogOpen && selectedEntryId && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -673,8 +691,8 @@ export default function IssuedCertificatesPage() {
               <DialogHeader>
                 <DialogTitle>Emitir Boletim para Cliente</DialogTitle>
               </DialogHeader>
-              <IssueCertificateForm 
-                entryCertificateId={selectedEntryId} 
+              <IssueCertificateForm
+                entryCertificateId={selectedEntryId}
                 onSuccess={() => {
                   setIsDialogOpen(false);
                   setSelectedEntryId(null);
@@ -684,21 +702,21 @@ export default function IssuedCertificatesPage() {
             </DialogContent>
           </Dialog>
         )}
-        
+
         {/* Diálogo de confirmação para exclusão */}
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
               <AlertDialogDescription>
-                Você está prestes a excluir um certificado emitido. Esta ação devolverá a quantidade ao estoque 
+                Você está prestes a excluir um certificado emitido. Esta ação devolverá a quantidade ao estoque
                 e não pode ser desfeita. Tem certeza que deseja continuar?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={confirmDelete} 
+              <AlertDialogAction
+                onClick={confirmDelete}
                 className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
               >
                 {deleteMutation.isPending ? (

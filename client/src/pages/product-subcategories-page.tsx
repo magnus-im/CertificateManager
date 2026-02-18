@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ProductSubcategoryForm } from "@/components/products/product-subcategory-form";
 import { ProductSubcategory, ProductCategory } from "@shared/schema";
 import { Link, useLocation } from "wouter";
+import { BulkImportModal } from "@/components/bulk-import-modal";
 
 export default function ProductSubcategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,7 +20,7 @@ export default function ProductSubcategoriesPage() {
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [location] = useLocation();
   const { toast } = useToast();
-  
+
   // Extract categoryId from URL if present
   useEffect(() => {
     const params = new URLSearchParams(location.split("?")[1]);
@@ -28,18 +29,18 @@ export default function ProductSubcategoriesPage() {
       setCategoryId(Number(categoryIdParam));
     }
   }, [location]);
-  
+
   // Get category details if categoryId is available
   const { data: category } = useQuery<ProductCategory>({
     queryKey: [`/api/product-categories/${categoryId}`],
     enabled: !!categoryId,
   });
-  
+
   // Get subcategories
   const { data: subcategories, isLoading } = useQuery<ProductSubcategory[]>({
     queryKey: ["/api/product-subcategories", { categoryId }],
     queryFn: async () => {
-      const endpoint = categoryId 
+      const endpoint = categoryId
         ? `/api/product-subcategories?categoryId=${categoryId}`
         : "/api/product-subcategories";
       const response = await fetch(endpoint);
@@ -49,20 +50,20 @@ export default function ProductSubcategoriesPage() {
       return response.json();
     },
   });
-  
+
   // Filter subcategories based on search query
   const filteredSubcategories = subcategories
-    ? subcategories.filter(subcategory => 
-        subcategory.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (subcategory.description && subcategory.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? subcategories.filter(subcategory =>
+      subcategory.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (subcategory.description && subcategory.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
     : [];
-  
+
   const handleEdit = (subcategoryId: number) => {
     setSelectedSubcategoryId(subcategoryId);
     setIsDialogOpen(true);
   };
-  
+
   const handleAddNew = () => {
     setSelectedSubcategoryId(null);
     setIsDialogOpen(true);
@@ -78,28 +79,31 @@ export default function ProductSubcategoriesPage() {
               Voltar para Categorias
             </Link>
           </Button>
-          
+
           {category && (
             <h1 className="text-2xl font-medium ml-2">
               Subcategorias de {category.name}
             </h1>
           )}
-          
+
           {!category && (
             <h1 className="text-2xl font-medium ml-2">
               Todas as Subcategorias
             </h1>
           )}
         </div>
-        
+
         <div className="flex justify-between items-center mb-6">
           <div></div>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Subcategoria
-          </Button>
+          <div className="flex gap-2">
+            <BulkImportModal entity="subcategories" />
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Subcategoria
+            </Button>
+          </div>
         </div>
-        
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Buscar Subcategorias</CardTitle>
@@ -107,7 +111,7 @@ export default function ProductSubcategoriesPage() {
           <CardContent>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input 
+              <Input
                 placeholder="Buscar por nome ou descrição..."
                 className="pl-10"
                 value={searchQuery}
@@ -116,7 +120,7 @@ export default function ProductSubcategoriesPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -139,7 +143,7 @@ export default function ProductSubcategoriesPage() {
                       <TableRow>
                         <TableCell colSpan={4} className="text-center py-8 text-gray-500">
                           <Folders className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                          {searchQuery 
+                          {searchQuery
                             ? "Nenhuma subcategoria encontrada com os critérios de busca"
                             : "Nenhuma subcategoria cadastrada ainda"}
                         </TableCell>
@@ -158,9 +162,9 @@ export default function ProductSubcategoriesPage() {
                             </Button>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleEdit(subcategory.id)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -179,7 +183,7 @@ export default function ProductSubcategoriesPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -187,9 +191,9 @@ export default function ProductSubcategoriesPage() {
               {selectedSubcategoryId ? "Editar Subcategoria" : "Nova Subcategoria"}
             </DialogTitle>
           </DialogHeader>
-          <ProductSubcategoryForm 
+          <ProductSubcategoryForm
             subcategoryId={selectedSubcategoryId}
-            defaultCategoryId={categoryId} 
+            defaultCategoryId={categoryId}
             onSuccess={() => setIsDialogOpen(false)}
           />
         </DialogContent>

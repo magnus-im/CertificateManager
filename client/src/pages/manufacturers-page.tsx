@@ -13,26 +13,27 @@ import { insertManufacturerSchema, Manufacturer } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { BulkImportModal } from "@/components/bulk-import-modal";
 
 export default function ManufacturersPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingManufacturer, setEditingManufacturer] = useState<Manufacturer | null>(null);
-  
+
   // Fetch manufacturers
   const { data: manufacturers, isLoading } = useQuery<Manufacturer[]>({
     queryKey: ["/api/manufacturers"],
   });
-  
+
   // Filter manufacturers based on search query
   const filteredManufacturers = manufacturers
-    ? manufacturers.filter(manufacturer => 
-        manufacturer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        manufacturer.country.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? manufacturers.filter(manufacturer =>
+      manufacturer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      manufacturer.country.toLowerCase().includes(searchQuery.toLowerCase())
+    )
     : [];
-  
+
   // Form for adding/editing manufacturers
   const form = useForm<Omit<Manufacturer, "id" | "tenantId">>({
     resolver: zodResolver(insertManufacturerSchema.omit({ tenantId: true })),
@@ -41,7 +42,7 @@ export default function ManufacturersPage() {
       country: "",
     },
   });
-  
+
   // Set form values when editing
   const handleEdit = (manufacturer: Manufacturer) => {
     setEditingManufacturer(manufacturer);
@@ -51,7 +52,7 @@ export default function ManufacturersPage() {
     });
     setIsDialogOpen(true);
   };
-  
+
   // Reset form when adding new
   const handleAddNew = () => {
     setEditingManufacturer(null);
@@ -61,7 +62,7 @@ export default function ManufacturersPage() {
     });
     setIsDialogOpen(true);
   };
-  
+
   // Mutation for adding/editing manufacturer
   const manufacturerMutation = useMutation({
     mutationFn: async (data: Omit<Manufacturer, "id" | "tenantId">) => {
@@ -78,8 +79,8 @@ export default function ManufacturersPage() {
       setIsDialogOpen(false);
       toast({
         title: editingManufacturer ? "Fabricante atualizado" : "Fabricante adicionado",
-        description: editingManufacturer 
-          ? "O fabricante foi atualizado com sucesso." 
+        description: editingManufacturer
+          ? "O fabricante foi atualizado com sucesso."
           : "O fabricante foi adicionado com sucesso.",
       });
     },
@@ -91,7 +92,7 @@ export default function ManufacturersPage() {
       });
     },
   });
-  
+
   // Delete manufacturer mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -112,13 +113,13 @@ export default function ManufacturersPage() {
       });
     },
   });
-  
+
   const handleDelete = (id: number) => {
     if (window.confirm("Tem certeza que deseja remover este fabricante?")) {
       deleteMutation.mutate(id);
     }
   };
-  
+
   const onSubmit = (data: Omit<Manufacturer, "id" | "tenantId">) => {
     manufacturerMutation.mutate(data);
   };
@@ -128,12 +129,15 @@ export default function ManufacturersPage() {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-medium">Fabricantes</h1>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Fabricante
-          </Button>
+          <div className="flex gap-2">
+            <BulkImportModal entity="manufacturers" />
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Fabricante
+            </Button>
+          </div>
         </div>
-        
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Buscar Fabricantes</CardTitle>
@@ -141,7 +145,7 @@ export default function ManufacturersPage() {
           <CardContent>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input 
+              <Input
                 placeholder="Buscar por nome ou país de origem..."
                 className="pl-10"
                 value={searchQuery}
@@ -150,7 +154,7 @@ export default function ManufacturersPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -172,7 +176,7 @@ export default function ManufacturersPage() {
                       <TableRow>
                         <TableCell colSpan={3} className="text-center py-8 text-gray-500">
                           <Factory className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                          {searchQuery 
+                          {searchQuery
                             ? "Nenhum fabricante encontrado com os critérios de busca"
                             : "Nenhum fabricante cadastrado ainda"}
                         </TableCell>
@@ -183,16 +187,16 @@ export default function ManufacturersPage() {
                           <TableCell className="font-medium">{manufacturer.name}</TableCell>
                           <TableCell>{manufacturer.country}</TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleEdit(manufacturer)}
                               disabled={manufacturerMutation.isPending}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="icon"
                               onClick={() => handleDelete(manufacturer.id)}
                               disabled={deleteMutation.isPending}
@@ -210,7 +214,7 @@ export default function ManufacturersPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
@@ -218,7 +222,7 @@ export default function ManufacturersPage() {
               {editingManufacturer ? "Editar Fabricante" : "Novo Fabricante"}
             </DialogTitle>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -234,7 +238,7 @@ export default function ManufacturersPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="country"
@@ -248,7 +252,7 @@ export default function ManufacturersPage() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
                   type="button"
@@ -258,7 +262,7 @@ export default function ManufacturersPage() {
                 >
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   type="submit"
                   disabled={manufacturerMutation.isPending}
                 >

@@ -19,7 +19,7 @@ interface IssueCertificateFormProps {
 
 export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCertificateFormProps) {
   const { toast } = useToast();
-  
+
   const [formData, setFormData] = useState({
     clientId: "",
     invoiceNumber: "",
@@ -30,18 +30,18 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
     showSupplierInfo: false,
     observations: "",
   });
-  
+
   // Fetch entry certificate if ID is provided
   const { data: entryCertificate, isLoading: isLoadingCertificate } = useQuery<EntryCertificate & { product: Product }>({
     queryKey: [`/api/entry-certificates/${entryCertificateId}`],
     enabled: !!entryCertificateId,
   });
-  
+
   // Fetch clients for dropdown
   const { data: clients, isLoading: isLoadingClients } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
-  
+
   // Set default values based on entry certificate
   useEffect(() => {
     if (entryCertificate) {
@@ -52,14 +52,14 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
       }));
     }
   }, [entryCertificate]);
-  
+
   // Create issued certificate
   const issueMutation = useMutation({
     mutationFn: async () => {
       if (!entryCertificateId) {
         throw new Error("Nenhum boletim de entrada selecionado");
       }
-      
+
       const payload = {
         entryCertificateId,
         clientId: parseInt(formData.clientId),
@@ -71,17 +71,17 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
         showSupplierInfo: formData.showSupplierInfo,
         observations: formData.observations,
       };
-      
+
       return await apiRequest("POST", "/api/issued-certificates", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/issued-certificates"] });
-      
+
       toast({
         title: "Boletim emitido",
         description: "O boletim foi emitido com sucesso.",
       });
-      
+
       if (onSuccess) {
         onSuccess();
       }
@@ -94,7 +94,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
       });
     },
   });
-  
+
   // Form change handlers
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -103,24 +103,24 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
       [name]: value,
     }));
   };
-  
+
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [name]: value,
     }));
   };
-  
+
   const handleSwitchChange = (checked: boolean) => {
     setFormData(prev => ({
       ...prev,
       showSupplierInfo: checked,
     }));
   };
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!formData.clientId || !formData.invoiceNumber || !formData.soldQuantity || !formData.customLot) {
       toast({
@@ -130,10 +130,10 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
       });
       return;
     }
-    
+
     issueMutation.mutate();
   };
-  
+
   if (isLoadingCertificate || isLoadingClients) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -141,7 +141,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
       </div>
     );
   }
-  
+
   if (!entryCertificate) {
     return (
       <div className="p-4 text-center">
@@ -174,9 +174,15 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
               <span className="text-gray-500">Validade:</span>{" "}
               <span className="font-medium">{formatDate(entryCertificate.expirationDate)}</span>
             </div>
+            <div>
+              <span className="text-gray-500">Estoque Atual:</span>{" "}
+              <span className="font-medium text-green-600">
+                {(entryCertificate as any).currentBalance} {entryCertificate.measureUnit}
+              </span>
+            </div>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label htmlFor="clientId">Cliente *</Label>
@@ -197,7 +203,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
               </SelectContent>
             </Select>
           </div>
-          
+
           <div>
             <Label htmlFor="invoiceNumber">Número da Nota Fiscal de Saída *</Label>
             <Input
@@ -209,7 +215,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
               required
             />
           </div>
-          
+
           <div>
             <Label htmlFor="issueDate">Data da Emissão *</Label>
             <Input
@@ -221,7 +227,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
               required
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label htmlFor="soldQuantity">Quantidade Vendida *</Label>
@@ -237,7 +243,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
                 required
               />
             </div>
-            
+
             <div>
               <Label htmlFor="measureUnit">Unidade *</Label>
               <Input
@@ -250,7 +256,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
               />
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="customLot">Lote Personalizado *</Label>
             <Input
@@ -262,7 +268,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
               required
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Switch
               id="showSupplierInfo"
@@ -273,7 +279,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
               Exibir informações do fornecedor, fabricante e país de origem no certificado
             </Label>
           </div>
-          
+
           <div className="md:col-span-2">
             <Label htmlFor="observations">Observações</Label>
             <textarea
@@ -286,7 +292,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
             />
           </div>
         </div>
-        
+
         <div className="pt-6 border-t flex justify-end space-x-2">
           <Button
             type="button"
@@ -295,7 +301,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
           >
             Cancelar
           </Button>
-          <Button 
+          <Button
             type="submit"
             disabled={issueMutation.isPending}
           >

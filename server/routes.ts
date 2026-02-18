@@ -4,9 +4,9 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAuthenticatedWithSubscription, isAdmin, isTenantMember } from "./auth";
 import { z } from "zod";
 import { updateSubscriptionStatus } from "./middlewares/subscription-check";
-import { 
-  insertProductSchema, insertProductCharacteristicSchema, 
-  insertSupplierSchema, insertManufacturerSchema, 
+import {
+  insertProductSchema, insertProductCharacteristicSchema,
+  insertSupplierSchema, insertManufacturerSchema,
   insertClientSchema, insertEntryCertificateSchema,
   insertEntryCertificateResultSchema, insertIssuedCertificateSchema,
   insertTenantSchema, insertPackageTypeSchema,
@@ -24,7 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (value === null || value === undefined || value === '') {
       return 'N/A';
     }
-    
+
     try {
       // Converte para número e formata com 4 casas decimais
       const numValue = parseFloat(value);
@@ -41,31 +41,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Set up authentication routes
   setupAuth(app);
-  
+
   // Rotas para visualização e download de arquivos
   app.get("/api/files/view/:id", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
       const fileId = Number(req.params.id);
       const fileType = req.query.type as string;
-      
+
       let file;
       if (fileType === 'base') {
         file = await storage.getProductBaseFile(fileId, user.tenantId);
       } else {
         file = await storage.getProductFile(fileId, user.tenantId);
       }
-      
+
       if (!file) {
         return res.status(404).json({ message: "Arquivo não encontrado" });
       }
-      
+
       // Em um ambiente de produção real, você anexaria o arquivo real aqui
       // Para este exemplo, redirecionamos para o fileUrl (que em produção seria um URL válido)
       if (file.fileUrl && file.fileUrl.startsWith('http')) {
         return res.redirect(file.fileUrl);
       }
-      
+
       // Para arquivos em base64 ou caminhos relativos, exibimos uma página HTML simples
       res.setHeader('Content-Type', 'text/html');
       res.send(`
@@ -97,28 +97,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
-  
+
   app.get("/api/files/download/:id", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
       const fileId = Number(req.params.id);
       const fileType = req.query.type as string;
-      
+
       let file;
       if (fileType === 'base') {
         file = await storage.getProductBaseFile(fileId, user.tenantId);
       } else {
         file = await storage.getProductFile(fileId, user.tenantId);
       }
-      
+
       if (!file) {
         return res.status(404).json({ message: "Arquivo não encontrado" });
       }
-      
+
       // Em um ambiente de produção real, você enviaria o arquivo real aqui
       // Para este exemplo, enviamos um PDF ou texto de exemplo
       res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
-      
+
       if (file.fileType && file.fileType.includes('pdf')) {
         res.setHeader('Content-Type', 'application/pdf');
         // Enviamos um PDF de exemplo (texto que indica que é apenas um exemplo)
@@ -138,20 +138,20 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Rotas para visualização de certificados em HTML
   app.get("/api/certificates/view/:id", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
       const certificateId = Number(req.params.id);
-      
+
       // Obter o certificado e seus resultados
       const certificate = await storage.getEntryCertificate(certificateId, user.tenantId);
-      
+
       if (!certificate) {
         return res.status(404).json({ message: "Certificado não encontrado" });
       }
-      
+
       // Buscar dados relacionados
       const [supplier, manufacturer, product, results, tenant] = await Promise.all([
         storage.getSupplier(certificate.supplierId, user.tenantId),
@@ -160,31 +160,31 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         storage.getResultsByEntryCertificate(certificateId, user.tenantId),
         storage.getTenant(user.tenantId)
       ]);
-      
+
       // Formatar datas
       const formatDate = (date: Date | string) => {
         if (!date) return 'N/A';
         return new Date(date).toLocaleDateString('pt-BR');
       };
-      
+
       // Cálculo do período de validade
       const calcValidityPeriod = (mfgDate: string | null, expDate: string | null): string => {
         if (!mfgDate || !expDate) return 'N/A';
-        
+
         try {
           const mfg = new Date(mfgDate);
           const exp = new Date(expDate);
-          
+
           // Calcula diferença em meses
-          const diffMonths = (exp.getFullYear() - mfg.getFullYear()) * 12 + 
-                              (exp.getMonth() - mfg.getMonth());
-          
+          const diffMonths = (exp.getFullYear() - mfg.getFullYear()) * 12 +
+            (exp.getMonth() - mfg.getMonth());
+
           return `${diffMonths} MESES`;
         } catch (e) {
           return 'N/A';
         }
       };
-      
+
       // Renderizar HTML com o mesmo layout dos certificados emitidos
       res.setHeader('Content-Type', 'text/html');
       res.send(`
@@ -399,9 +399,9 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
             <div class="header">
               <!-- Logomarca no canto superior esquerdo -->
               <div class="logo-container">
-                ${tenant?.logoUrl 
-                  ? `<img src="${tenant.logoUrl}" alt="${tenant.name}" class="company-logo">` 
-                  : `<div class="company-name">${tenant?.name || 'Empresa'}</div>`}
+                ${tenant?.logoUrl
+          ? `<img src="${tenant.logoUrl}" alt="${tenant.name}" class="company-logo">`
+          : `<div class="company-name">${tenant?.name || 'Empresa'}</div>`}
               </div>
               
               <!-- Informações da empresa no canto superior direito -->
@@ -507,10 +507,10 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
                     <tr>
                       <td>${result.characteristicName}</td>
                       <td>${result.unit}</td>
-                      <td>${result.minValue && result.maxValue ? 
-                        `${formatNumberTo4Decimals(result.minValue)} - ${formatNumberTo4Decimals(result.maxValue)}` : 
-                        (result.minValue ? formatNumberTo4Decimals(result.minValue) : 
-                         (result.maxValue ? formatNumberTo4Decimals(result.maxValue) : 'N/A'))}</td>
+                      <td>${result.minValue && result.maxValue ?
+              `${formatNumberTo4Decimals(result.minValue)} - ${formatNumberTo4Decimals(result.maxValue)}` :
+              (result.minValue ? formatNumberTo4Decimals(result.minValue) :
+                (result.maxValue ? formatNumberTo4Decimals(result.maxValue) : 'N/A'))}</td>
                       <td><strong>${formatNumberTo4Decimals(result.obtainedValue)}</strong></td>
                     </tr>
                   `).join('') : `
@@ -539,7 +539,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Endpoint para visualização de certificados emitidos em HTML
 
 
@@ -547,21 +547,21 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const certificateId = Number(req.params.id);
-      
+
       // Obter o certificado
       const certificate = await storage.getIssuedCertificate(certificateId, user.tenantId);
-      
+
       if (!certificate) {
         return res.status(404).json({ message: "Certificado não encontrado" });
       }
-      
+
       // Obter o certificado de entrada relacionado
       const entryCertificate = await storage.getEntryCertificate(certificate.entryCertificateId, user.tenantId);
-      
+
       if (!entryCertificate) {
         return res.status(404).json({ message: "Certificado de entrada não encontrado" });
       }
-      
+
       // Buscar dados relacionados
       const [supplier, manufacturer, product, client, results, tenant] = await Promise.all([
         storage.getSupplier(entryCertificate.supplierId, user.tenantId),
@@ -571,31 +571,31 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         storage.getResultsByEntryCertificate(entryCertificate.id, user.tenantId),
         storage.getTenant(user.tenantId)
       ]);
-      
+
       // Formatar datas
       const formatDate = (date: Date) => {
         if (!date) return 'N/A';
         return new Date(date).toLocaleDateString('pt-BR');
       };
-      
+
       // Cálculo do período de validade
       const calcValidityPeriod = (mfgDate: string | null, expDate: string | null): string => {
         if (!mfgDate || !expDate) return 'N/A';
-        
+
         try {
           const mfg = new Date(mfgDate);
           const exp = new Date(expDate);
-          
+
           // Calcula diferença em meses
-          const diffMonths = (exp.getFullYear() - mfg.getFullYear()) * 12 + 
-                              (exp.getMonth() - mfg.getMonth());
-          
+          const diffMonths = (exp.getFullYear() - mfg.getFullYear()) * 12 +
+            (exp.getMonth() - mfg.getMonth());
+
           return `${diffMonths} MESES`;
         } catch (e) {
           return 'N/A';
         }
       };
-      
+
       // Renderizar HTML seguindo a estrutura definida
       res.setHeader('Content-Type', 'text/html');
       res.send(`
@@ -810,9 +810,9 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
             <div class="header">
               <!-- Logomarca no canto superior esquerdo -->
               <div class="logo-container">
-                ${tenant?.logoUrl 
-                  ? `<img src="${tenant.logoUrl}" alt="${tenant.name}" class="company-logo">` 
-                  : `<div class="company-name">${tenant?.name || 'Empresa'}</div>`}
+                ${tenant?.logoUrl
+          ? `<img src="${tenant.logoUrl}" alt="${tenant.name}" class="company-logo">`
+          : `<div class="company-name">${tenant?.name || 'Empresa'}</div>`}
               </div>
               
               <!-- Informações da empresa no canto superior direito -->
@@ -917,10 +917,10 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
                     <tr>
                       <td>${result.characteristicName}</td>
                       <td>${result.unit}</td>
-                      <td>${result.minValue && result.maxValue ? 
-                        `${formatNumberTo4Decimals(result.minValue)} - ${formatNumberTo4Decimals(result.maxValue)}` : 
-                        (result.minValue ? formatNumberTo4Decimals(result.minValue) : 
-                         (result.maxValue ? formatNumberTo4Decimals(result.maxValue) : 'N/A'))}</td>
+                      <td>${result.minValue && result.maxValue ?
+              `${formatNumberTo4Decimals(result.minValue)} - ${formatNumberTo4Decimals(result.maxValue)}` :
+              (result.minValue ? formatNumberTo4Decimals(result.minValue) :
+                (result.maxValue ? formatNumberTo4Decimals(result.maxValue) : 'N/A'))}</td>
                       <td><strong>${formatNumberTo4Decimals(result.obtainedValue)}</strong></td>
                     </tr>
                   `).join('') : `
@@ -959,34 +959,34 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Rota para download do arquivo original do certificado
   app.get("/api/certificates/download/:id", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
       const certificateId = Number(req.params.id);
-      
+
       // Obter o certificado
       const certificate = await storage.getEntryCertificate(certificateId, user.tenantId);
-      
+
       if (!certificate) {
         return res.status(404).json({ message: "Certificado não encontrado" });
       }
-      
+
       // Verificar se o certificado tem um arquivo original
       if (!certificate.originalFileUrl) {
         return res.status(404).json({ message: "Este certificado não possui um arquivo original anexado" });
       }
-      
+
       // Redirecionar para a URL original do arquivo
       // Isso permite que o navegador abra o arquivo diretamente
       return res.redirect(certificate.originalFileUrl);
-      
+
     } catch (error) {
       next(error);
     }
   });
-  
+
   // Package Types routes
   app.get("/api/package-types", isAuthenticated, async (req, res, next) => {
     try {
@@ -997,7 +997,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   app.post("/api/package-types", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
@@ -1005,7 +1005,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const packageType = await storage.createPackageType(parsedBody);
       res.status(201).json(packageType);
     } catch (error) {
@@ -1015,53 +1015,53 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   app.get("/api/package-types/:id", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
       const packageType = await storage.getPackageType(
-        Number(req.params.id), 
+        Number(req.params.id),
         user.tenantId
       );
-      
+
       if (!packageType) {
         return res.status(404).json({ message: "Package type not found" });
       }
-      
+
       res.json(packageType);
     } catch (error) {
       next(error);
     }
   });
-  
+
   app.patch("/api/package-types/:id", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
       const packageType = await storage.updatePackageType(
-        Number(req.params.id), 
-        user.tenantId, 
+        Number(req.params.id),
+        user.tenantId,
         req.body
       );
-      
+
       if (!packageType) {
         return res.status(404).json({ message: "Package type not found" });
       }
-      
+
       res.json(packageType);
     } catch (error) {
       next(error);
     }
   });
-  
+
   app.delete("/api/package-types/:id", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
       const success = await storage.deletePackageType(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Package type not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -1077,19 +1077,19 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Rota para tenant obter seu próprio status de assinatura
   app.get("/api/tenants/self/subscription", isAuthenticatedWithSubscription, async (req, res, next) => {
     try {
       if (!req.user) return res.status(401).json({ message: "Unauthorized" });
-      
+
       const tenant = await storage.getTenant(req.user.tenantId);
       if (!tenant) {
         return res.status(404).json({ message: "Tenant não encontrado" });
       }
-      
+
       const plan = await storage.getPlan(tenant.planId);
-      
+
       // Verifica se o pagamento está próximo do vencimento
       let daysToExpiration = null;
       if (tenant.nextPaymentDate) {
@@ -1098,7 +1098,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         const diffTime = nextPayment.getTime() - today.getTime();
         daysToExpiration = Math.ceil(diffTime / (1000 * 3600 * 24));
       }
-      
+
       res.json({
         tenantId: tenant.id,
         tenantName: tenant.name,
@@ -1151,7 +1151,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Endpoint para que membros de um tenant (incluindo não-admin) possam atualizar seu próprio tenant
   app.patch("/api/tenant/profile", isAuthenticated, async (req, res, next) => {
     try {
@@ -1165,7 +1165,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Endpoint para que membros de um tenant possam obter as informações do seu próprio tenant
   app.get("/api/tenant/profile", isAuthenticated, async (req, res, next) => {
     try {
@@ -1185,7 +1185,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       let users;
-      
+
       if (user.role === "admin") {
         // Admin can see all users from any tenant
         if (req.query.tenantId) {
@@ -1203,7 +1203,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         // Regular users can only see users from their own tenant
         users = await storage.getUsersByTenant(user.tenantId);
       }
-      
+
       // Remove passwords from the response
       const sanitizedUsers = users.map(({ password, ...rest }) => rest);
       res.json(sanitizedUsers);
@@ -1230,7 +1230,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const category = await storage.createProductCategory(parsedBody);
       res.status(201).json(category);
     } catch (error) {
@@ -1245,14 +1245,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const category = await storage.getProductCategory(
-        Number(req.params.id), 
+        Number(req.params.id),
         user.tenantId
       );
-      
+
       if (!category) {
         return res.status(404).json({ message: "Category not found" });
       }
-      
+
       res.json(category);
     } catch (error) {
       next(error);
@@ -1263,15 +1263,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const category = await storage.updateProductCategory(
-        Number(req.params.id), 
-        user.tenantId, 
+        Number(req.params.id),
+        user.tenantId,
         req.body
       );
-      
+
       if (!category) {
         return res.status(404).json({ message: "Category not found" });
       }
-      
+
       res.json(category);
     } catch (error) {
       next(error);
@@ -1282,11 +1282,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteProductCategory(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Category not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -1298,14 +1298,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
-      
+
       let subcategories;
       if (categoryId) {
         subcategories = await storage.getProductSubcategoriesByCategory(categoryId, user.tenantId);
       } else {
         subcategories = await storage.getProductSubcategoriesByTenant(user.tenantId);
       }
-      
+
       res.json(subcategories);
     } catch (error) {
       next(error);
@@ -1319,7 +1319,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const subcategory = await storage.createProductSubcategory(parsedBody);
       res.status(201).json(subcategory);
     } catch (error) {
@@ -1334,14 +1334,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const subcategory = await storage.getProductSubcategory(
-        Number(req.params.id), 
+        Number(req.params.id),
         user.tenantId
       );
-      
+
       if (!subcategory) {
         return res.status(404).json({ message: "Subcategory not found" });
       }
-      
+
       res.json(subcategory);
     } catch (error) {
       next(error);
@@ -1352,15 +1352,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const subcategory = await storage.updateProductSubcategory(
-        Number(req.params.id), 
-        user.tenantId, 
+        Number(req.params.id),
+        user.tenantId,
         req.body
       );
-      
+
       if (!subcategory) {
         return res.status(404).json({ message: "Subcategory not found" });
       }
-      
+
       res.json(subcategory);
     } catch (error) {
       next(error);
@@ -1371,11 +1371,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteProductSubcategory(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Subcategory not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -1387,14 +1387,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const subcategoryId = req.query.subcategoryId ? Number(req.query.subcategoryId) : undefined;
-      
+
       let productBases;
       if (subcategoryId) {
         productBases = await storage.getProductBasesBySubcategory(subcategoryId, user.tenantId);
       } else {
         productBases = await storage.getProductBasesByTenant(user.tenantId);
       }
-      
+
       res.json(productBases);
     } catch (error) {
       next(error);
@@ -1408,7 +1408,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const productBase = await storage.createProductBase(parsedBody);
       res.status(201).json(productBase);
     } catch (error) {
@@ -1423,14 +1423,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const productBase = await storage.getProductBase(
-        Number(req.params.id), 
+        Number(req.params.id),
         user.tenantId
       );
-      
+
       if (!productBase) {
         return res.status(404).json({ message: "Product base not found" });
       }
-      
+
       res.json(productBase);
     } catch (error) {
       next(error);
@@ -1441,15 +1441,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const productBase = await storage.updateProductBase(
-        Number(req.params.id), 
-        user.tenantId, 
+        Number(req.params.id),
+        user.tenantId,
         req.body
       );
-      
+
       if (!productBase) {
         return res.status(404).json({ message: "Product base not found" });
       }
-      
+
       res.json(productBase);
     } catch (error) {
       next(error);
@@ -1460,11 +1460,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteProductBase(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Product base not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -1479,7 +1479,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const productFile = await storage.createProductFile(parsedBody);
       res.status(201).json(productFile);
     } catch (error) {
@@ -1494,10 +1494,10 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const files = await storage.getProductFilesByProduct(
-        Number(req.params.productId), 
+        Number(req.params.productId),
         user.tenantId
       );
-      
+
       res.json(files);
     } catch (error) {
       next(error);
@@ -1508,17 +1508,17 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteProductFile(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Product file not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
     }
   });
-  
+
   // Product Base Files routes
   app.post("/api/product-base-files", isAuthenticated, async (req, res, next) => {
     try {
@@ -1527,7 +1527,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const productBaseFile = await storage.createProductBaseFile(parsedBody);
       res.status(201).json(productBaseFile);
     } catch (error) {
@@ -1542,16 +1542,16 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const files = await storage.getProductBaseFilesByBaseProduct(
-        Number(req.params.baseProductId), 
+        Number(req.params.baseProductId),
         user.tenantId
       );
-      
+
       res.json(files);
     } catch (error) {
       next(error);
     }
   });
-  
+
   app.get("/api/product-base/:baseProductId/files/:category", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
@@ -1560,7 +1560,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         req.params.category,
         user.tenantId
       );
-      
+
       res.json(files);
     } catch (error) {
       next(error);
@@ -1571,11 +1571,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteProductBaseFile(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Product base file not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -1587,14 +1587,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const baseProductId = req.query.baseProductId ? Number(req.query.baseProductId) : undefined;
-      
+
       let products;
       if (baseProductId) {
         products = await storage.getProductsByBase(baseProductId, user.tenantId);
       } else {
         products = await storage.getProductsByTenant(user.tenantId);
       }
-      
+
       res.json(products);
     } catch (error) {
       next(error);
@@ -1608,7 +1608,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const product = await storage.createProduct(parsedBody);
       res.status(201).json(product);
     } catch (error) {
@@ -1623,14 +1623,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const product = await storage.getProduct(Number(req.params.id), user.tenantId);
-      
+
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       // Get product characteristics
       const characteristics = await storage.getCharacteristicsByProduct(product.id, user.tenantId);
-      
+
       res.json({ ...product, characteristics });
     } catch (error) {
       next(error);
@@ -1641,11 +1641,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const product = await storage.updateProduct(Number(req.params.id), user.tenantId, req.body);
-      
+
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       res.json(product);
     } catch (error) {
       next(error);
@@ -1656,11 +1656,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteProduct(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Product not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -1675,7 +1675,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const characteristic = await storage.createProductCharacteristic(parsedBody);
       res.status(201).json(characteristic);
     } catch (error) {
@@ -1690,10 +1690,10 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const characteristics = await storage.getCharacteristicsByProduct(
-        Number(req.params.productId), 
+        Number(req.params.productId),
         user.tenantId
       );
-      
+
       res.json(characteristics);
     } catch (error) {
       next(error);
@@ -1704,7 +1704,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const productId = req.query.productId ? Number(req.query.productId) : undefined;
-      
+
       let characteristics;
       if (productId) {
         characteristics = await storage.getCharacteristicsByProduct(productId, user.tenantId);
@@ -1713,7 +1713,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         // Implementation depends on business requirements
         characteristics = [];
       }
-      
+
       res.json(characteristics);
     } catch (error) {
       next(error);
@@ -1724,15 +1724,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const characteristic = await storage.updateProductCharacteristic(
-        Number(req.params.id), 
-        user.tenantId, 
+        Number(req.params.id),
+        user.tenantId,
         req.body
       );
-      
+
       if (!characteristic) {
         return res.status(404).json({ message: "Characteristic not found" });
       }
-      
+
       res.json(characteristic);
     } catch (error) {
       next(error);
@@ -1743,14 +1743,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteProductCharacteristic(
-        Number(req.params.id), 
+        Number(req.params.id),
         user.tenantId
       );
-      
+
       if (!success) {
         return res.status(404).json({ message: "Characteristic not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -1775,7 +1775,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const supplier = await storage.createSupplier(parsedBody);
       res.status(201).json(supplier);
     } catch (error) {
@@ -1790,11 +1790,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const supplier = await storage.getSupplier(Number(req.params.id), user.tenantId);
-      
+
       if (!supplier) {
         return res.status(404).json({ message: "Supplier not found" });
       }
-      
+
       res.json(supplier);
     } catch (error) {
       next(error);
@@ -1805,15 +1805,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const supplier = await storage.updateSupplier(
-        Number(req.params.id), 
-        user.tenantId, 
+        Number(req.params.id),
+        user.tenantId,
         req.body
       );
-      
+
       if (!supplier) {
         return res.status(404).json({ message: "Supplier not found" });
       }
-      
+
       res.json(supplier);
     } catch (error) {
       next(error);
@@ -1824,11 +1824,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteSupplier(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Supplier not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -1853,7 +1853,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const manufacturer = await storage.createManufacturer(parsedBody);
       res.status(201).json(manufacturer);
     } catch (error) {
@@ -1868,14 +1868,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const manufacturer = await storage.getManufacturer(
-        Number(req.params.id), 
+        Number(req.params.id),
         user.tenantId
       );
-      
+
       if (!manufacturer) {
         return res.status(404).json({ message: "Manufacturer not found" });
       }
-      
+
       res.json(manufacturer);
     } catch (error) {
       next(error);
@@ -1886,15 +1886,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const manufacturer = await storage.updateManufacturer(
-        Number(req.params.id), 
-        user.tenantId, 
+        Number(req.params.id),
+        user.tenantId,
         req.body
       );
-      
+
       if (!manufacturer) {
         return res.status(404).json({ message: "Manufacturer not found" });
       }
-      
+
       res.json(manufacturer);
     } catch (error) {
       next(error);
@@ -1905,14 +1905,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteManufacturer(
-        Number(req.params.id), 
+        Number(req.params.id),
         user.tenantId
       );
-      
+
       if (!success) {
         return res.status(404).json({ message: "Manufacturer not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -1937,7 +1937,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const client = await storage.createClient(parsedBody);
       res.status(201).json(client);
     } catch (error) {
@@ -1952,11 +1952,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const client = await storage.getClient(Number(req.params.id), user.tenantId);
-      
+
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
-      
+
       res.json(client);
     } catch (error) {
       next(error);
@@ -1967,15 +1967,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const client = await storage.updateClient(
-        Number(req.params.id), 
-        user.tenantId, 
+        Number(req.params.id),
+        user.tenantId,
         req.body
       );
-      
+
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
-      
+
       res.json(client);
     } catch (error) {
       next(error);
@@ -1986,11 +1986,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deleteClient(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Client not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -2001,40 +2001,45 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   app.get("/api/entry-certificates", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
-      
+
       // Extract filter parameters
       const filters: Record<string, any> = {};
       const filterFields = [
-        'productId', 'supplierId', 'manufacturerId', 
+        'productId', 'supplierId', 'manufacturerId',
         'internalLot', 'referenceDocument', 'startDate', 'endDate'
       ];
-      
+
       filterFields.forEach(field => {
         if (req.query[field]) {
           filters[field] = req.query[field];
         }
       });
-      
+
       const certificates = await storage.getEntryCertificatesByTenant(user.tenantId, filters);
-      
+
       // Enhance response with related data
       const enhancedCertificates = await Promise.all(certificates.map(async (cert) => {
-        const [product, supplier, manufacturer, results] = await Promise.all([
+        const [product, supplier, manufacturer, results, issuedCerts] = await Promise.all([
           storage.getProduct(cert.productId, user.tenantId),
           storage.getSupplier(cert.supplierId, user.tenantId),
           storage.getManufacturer(cert.manufacturerId, user.tenantId),
-          storage.getResultsByEntryCertificate(cert.id, user.tenantId)
+          storage.getResultsByEntryCertificate(cert.id, user.tenantId),
+          storage.getIssuedCertificatesByEntryCertificate(cert.id, user.tenantId)
         ]);
-        
+
+        const totalSold = issuedCerts.reduce((sum, ic) => sum + Number(ic.soldQuantity), 0);
+        const currentBalance = Number(cert.receivedQuantity) - totalSold;
+
         return {
           ...cert,
           productName: product?.technicalName,
           supplierName: supplier?.name,
           manufacturerName: manufacturer?.name,
-          results
+          results,
+          currentBalance: currentBalance.toFixed(2) // Send as string to match numeric types consistency
         };
       }));
-      
+
       res.json(enhancedCertificates);
     } catch (error) {
       next(error);
@@ -2044,15 +2049,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   app.post("/api/entry-certificates", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
-      
+
       // Parse and validate certificate data
       let certificateData = req.body.certificate;
-      
+
       // Se temos uma URL de arquivo original, extrair e preservar o nome original do arquivo
       if (certificateData.originalFileUrl) {
         const originalUrlParts = certificateData.originalFileUrl.split('/');
         const filename = originalUrlParts[originalUrlParts.length - 1];
-        
+
         // Tenta decodificar o nome do arquivo se ele estiver codificado na URL
         try {
           // Só tenta decodificar se o nome do arquivo parecer estar codificado
@@ -2066,16 +2071,16 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           certificateData.originalFileName = filename;
         }
       }
-      
+
       // Validar e processar os dados
       const validatedData = insertEntryCertificateSchema.parse({
         ...certificateData,
         tenantId: user.tenantId
       });
-      
+
       // Create certificate
       const certificate = await storage.createEntryCertificate(validatedData);
-      
+
       // Handle results if provided
       if (req.body.results && Array.isArray(req.body.results)) {
         const resultsPromises = req.body.results.map(result => {
@@ -2084,19 +2089,19 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
             entryCertificateId: certificate.id,
             tenantId: user.tenantId
           });
-          
+
           return storage.createEntryCertificateResult(resultData);
         });
-        
+
         await Promise.all(resultsPromises);
       }
-      
+
       // Get the complete certificate with results
       const completeData = {
         ...certificate,
         results: await storage.getResultsByEntryCertificate(certificate.id, user.tenantId)
       };
-      
+
       res.status(201).json(completeData);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -2110,33 +2115,34 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const certificate = await storage.getEntryCertificate(
-        Number(req.params.id), 
+        Number(req.params.id),
         user.tenantId
       );
-      
+
       if (!certificate) {
         return res.status(404).json({ message: "Certificate not found" });
       }
-      
+
       // Get certificate results
       const results = await storage.getResultsByEntryCertificate(
-        certificate.id, 
+        certificate.id,
         user.tenantId
       );
-      
+
       // Get related entities
       const [product, supplier, manufacturer] = await Promise.all([
         storage.getProduct(certificate.productId, user.tenantId),
         storage.getSupplier(certificate.supplierId, user.tenantId),
         storage.getManufacturer(certificate.manufacturerId, user.tenantId)
       ]);
-      
+
       res.json({
         ...certificate,
         results,
         product,
         supplier,
-        manufacturer
+        manufacturer,
+        currentBalance: (Number(certificate.receivedQuantity) - (await storage.getIssuedCertificatesByEntryCertificate(certificate.id, user.tenantId)).reduce((sum, ic) => sum + Number(ic.soldQuantity), 0)).toFixed(2)
       });
     } catch (error) {
       next(error);
@@ -2147,27 +2153,27 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const certificateId = Number(req.params.id);
-      
+
       // Obter o certificado atual
       const existingCertificate = await storage.getEntryCertificate(
-        certificateId, 
+        certificateId,
         user.tenantId
       );
-      
+
       if (!existingCertificate) {
         return res.status(404).json({ message: "Certificate not found" });
       }
-      
+
       // Preparar dados do certificado
       let certificateData = req.body.certificate || {};
-      
+
       // Se estiver atualizando o arquivo original, extrair e preservar o nome do arquivo
-      if (certificateData.originalFileUrl && 
-          (!existingCertificate.originalFileUrl || 
-           existingCertificate.originalFileUrl !== certificateData.originalFileUrl)) {
+      if (certificateData.originalFileUrl &&
+        (!existingCertificate.originalFileUrl ||
+          existingCertificate.originalFileUrl !== certificateData.originalFileUrl)) {
         const originalUrlParts = certificateData.originalFileUrl.split('/');
         const filename = originalUrlParts[originalUrlParts.length - 1];
-        
+
         try {
           // Só tenta decodificar se o nome do arquivo parecer estar codificado
           if (filename.includes('%')) {
@@ -2180,43 +2186,43 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           certificateData.originalFileName = filename;
         }
       }
-      
+
       // Update certificate
       const certificate = await storage.updateEntryCertificate(
-        certificateId, 
-        user.tenantId, 
+        certificateId,
+        user.tenantId,
         certificateData
       );
-      
+
       if (!certificate) {
         return res.status(404).json({ message: "Certificate not found" });
       }
-      
+
       // Handle results update if provided
       if (req.body.results && Array.isArray(req.body.results)) {
         // Delete existing results that are not in the new set
         const existingResults = await storage.getResultsByEntryCertificate(
-          certificateId, 
+          certificateId,
           user.tenantId
         );
-        
+
         const newResultIds = req.body.results
           .filter(r => r.id)
           .map(r => r.id);
-        
+
         for (const result of existingResults) {
           if (!newResultIds.includes(result.id)) {
             await storage.deleteEntryCertificateResult(result.id, user.tenantId);
           }
         }
-        
+
         // Update or create results
         for (const result of req.body.results) {
           if (result.id) {
             // Update existing result
             await storage.updateEntryCertificateResult(
-              result.id, 
-              user.tenantId, 
+              result.id,
+              user.tenantId,
               {
                 ...result,
                 entryCertificateId: certificateId,
@@ -2233,13 +2239,13 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           }
         }
       }
-      
+
       // Get the complete updated certificate with results
       const updatedResults = await storage.getResultsByEntryCertificate(
-        certificateId, 
+        certificateId,
         user.tenantId
       );
-      
+
       res.json({
         ...certificate,
         results: updatedResults
@@ -2253,24 +2259,24 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const certificateId = Number(req.params.id);
-      
+
       // Delete associated results first
       const results = await storage.getResultsByEntryCertificate(
-        certificateId, 
+        certificateId,
         user.tenantId
       );
-      
+
       for (const result of results) {
         await storage.deleteEntryCertificateResult(result.id, user.tenantId);
       }
-      
+
       // Now delete the certificate
       const success = await storage.deleteEntryCertificate(certificateId, user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Certificate not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
@@ -2281,34 +2287,34 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   app.get("/api/issued-certificates", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
-      
+
       // Extract filter parameters
       const filters: Record<string, any> = {};
       const filterFields = [
-        'clientId', 'entryCertificateId', 'invoiceNumber', 
+        'clientId', 'entryCertificateId', 'invoiceNumber',
         'customLot', 'startDate', 'endDate'
       ];
-      
+
       filterFields.forEach(field => {
         if (req.query[field]) {
           filters[field] = req.query[field];
         }
       });
-      
+
       const certificates = await storage.getIssuedCertificatesByTenant(user.tenantId, filters);
-      
+
       // Enhance response with related data
       const enhancedCertificates = await Promise.all(certificates.map(async (cert) => {
         const [entryCertificate, client] = await Promise.all([
           storage.getEntryCertificate(cert.entryCertificateId, user.tenantId),
           storage.getClient(cert.clientId, user.tenantId)
         ]);
-        
+
         let product;
         if (entryCertificate) {
           product = await storage.getProduct(entryCertificate.productId, user.tenantId);
         }
-        
+
         return {
           ...cert,
           clientName: client?.name,
@@ -2316,7 +2322,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           internalLot: entryCertificate?.internalLot
         };
       }));
-      
+
       res.json(enhancedCertificates);
     } catch (error) {
       next(error);
@@ -2326,27 +2332,27 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   app.post("/api/issued-certificates", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
-      
+
       // Parse and validate certificate data
       const certificateData = insertIssuedCertificateSchema.parse({
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       // Create issued certificate
       const certificate = await storage.createIssuedCertificate(certificateData);
-      
+
       // Get related entities for complete response
       const [entryCertificate, client] = await Promise.all([
         storage.getEntryCertificate(certificate.entryCertificateId, user.tenantId),
         storage.getClient(certificate.clientId, user.tenantId)
       ]);
-      
+
       let product;
       if (entryCertificate) {
         product = await storage.getProduct(entryCertificate.productId, user.tenantId);
       }
-      
+
       res.status(201).json({
         ...certificate,
         entryCertificate,
@@ -2365,30 +2371,30 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const certificate = await storage.getIssuedCertificate(
-        Number(req.params.id), 
+        Number(req.params.id),
         user.tenantId
       );
-      
+
       if (!certificate) {
         return res.status(404).json({ message: "Certificate not found" });
       }
-      
+
       // Get related entities
       const [entryCertificate, client] = await Promise.all([
         storage.getEntryCertificate(certificate.entryCertificateId, user.tenantId),
         storage.getClient(certificate.clientId, user.tenantId)
       ]);
-      
+
       // Enhance response data
       let product = null;
       let supplier = null;
       let manufacturer = null;
       let results = [];
-      
+
       if (entryCertificate) {
         // Get entry certificate results
         results = await storage.getResultsByEntryCertificate(entryCertificate.id, user.tenantId);
-        
+
         // Get product, supplier and manufacturer info in parallel
         [product, supplier, manufacturer] = await Promise.all([
           storage.getProduct(entryCertificate.productId, user.tenantId),
@@ -2396,7 +2402,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           storage.getManufacturer(entryCertificate.manufacturerId, user.tenantId)
         ]);
       }
-      
+
       // Prepare enhanced response
       res.json({
         ...certificate,
@@ -2415,31 +2421,31 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   app.delete("/api/issued-certificates/:id", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
       const certificateId = Number(req.params.id);
-      
+
       // Obter o certificado antes de excluí-lo para ajustar a rastreabilidade
       const certificate = await storage.getIssuedCertificate(certificateId, user.tenantId);
-      
+
       if (!certificate) {
         return res.status(404).json({ message: "Certificado não encontrado" });
       }
-      
+
       // Ajustar a rastreabilidade não é necessário explicitamente aqui, pois
       // quando calculamos a quantidade restante dinamicamente, ela já considera
       // apenas os certificados emitidos existentes no sistema.
       // Ao excluir o certificado, a próxima consulta já mostrará a quantidade atualizada.
-      
+
       // Excluir o certificado
       const success = await storage.deleteIssuedCertificate(certificateId, user.tenantId);
-      
+
       if (!success) {
         return res.status(500).json({ message: "Erro ao excluir certificado" });
       }
-      
+
       // Retornar uma resposta 204 (No Content) para indicar o sucesso
       res.status(204).end();
     } catch (error) {
@@ -2449,55 +2455,55 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
 
   // Traceability routes
   // Importante: a ordem das rotas é crítica - rotas mais específicas devem vir antes das mais genéricas
-  
+
   // 1. Busca avançada com parâmetros de filtro
   app.get("/api/traceability/search", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
-      const { 
-        internalLot, supplierLot, productId, 
-        supplierId, manufacturerId, startDate, endDate 
+      const {
+        internalLot, supplierLot, productId,
+        supplierId, manufacturerId, startDate, endDate
       } = req.query;
-      
-      console.log("Busca avançada com filtros:", { 
-        internalLot, supplierLot, productId, 
-        supplierId, manufacturerId, startDate, endDate 
+
+      console.log("Busca avançada com filtros:", {
+        internalLot, supplierLot, productId,
+        supplierId, manufacturerId, startDate, endDate
       });
-      
+
       // Obter todos os certificados do tenant
       const allCertificates = await storage.getEntryCertificatesByTenant(user.tenantId);
-      
+
       // Aplicar filtros
       const filteredCertificates = allCertificates.filter(cert => {
         let matchesFilters = true;
-        
+
         if (internalLot && typeof internalLot === 'string') {
           matchesFilters = matchesFilters && cert.internalLot.toLowerCase().includes(internalLot.toLowerCase());
         }
-        
+
         if (supplierLot && typeof supplierLot === 'string') {
           matchesFilters = matchesFilters && cert.supplierLot.toLowerCase().includes(supplierLot.toLowerCase());
         }
-        
+
         if (productId && typeof productId === 'string') {
           matchesFilters = matchesFilters && cert.productId === parseInt(productId, 10);
         }
-        
+
         if (supplierId && typeof supplierId === 'string') {
           matchesFilters = matchesFilters && cert.supplierId === parseInt(supplierId, 10);
         }
-        
+
         if (manufacturerId && typeof manufacturerId === 'string') {
           matchesFilters = matchesFilters && cert.manufacturerId === parseInt(manufacturerId, 10);
         }
-        
+
         // Para datas, usamos o campo entryDate ao invés de createdAt
         if (startDate && typeof startDate === 'string') {
           const certDate = new Date(cert.entryDate);
           const filterDate = new Date(startDate);
           matchesFilters = matchesFilters && certDate >= filterDate;
         }
-        
+
         if (endDate && typeof endDate === 'string') {
           const certDate = new Date(cert.entryDate);
           const filterDate = new Date(endDate);
@@ -2505,17 +2511,17 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           filterDate.setHours(23, 59, 59, 999);
           matchesFilters = matchesFilters && certDate <= filterDate;
         }
-        
+
         return matchesFilters;
       });
-      
+
       console.log(`Certificados filtrados: ${filteredCertificates.length}`);
-      
+
       // Se não encontrou nenhum certificado
       if (filteredCertificates.length === 0) {
         return res.status(200).json([]);
       }
-      
+
       // Processar detalhes para cada certificado encontrado
       const detailedCertificates = await Promise.all(filteredCertificates.map(async (entryCertificate) => {
         // Get all issued certificates for this entry certificate
@@ -2523,14 +2529,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           entryCertificate.id,
           user.tenantId
         );
-        
+
         // Get related entities
         const [product, supplier, manufacturer] = await Promise.all([
           storage.getProduct(entryCertificate.productId, user.tenantId),
           storage.getSupplier(entryCertificate.supplierId, user.tenantId),
           storage.getManufacturer(entryCertificate.manufacturerId, user.tenantId)
         ]);
-        
+
         // Get client info for issued certificates
         const enhancedIssuedCertificates = await Promise.all(issuedCertificates.map(async cert => {
           const client = await storage.getClient(cert.clientId, user.tenantId);
@@ -2539,15 +2545,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
             clientName: client?.name
           };
         }));
-        
+
         // Calculate remaining quantity
         const receivedQuantity = Number(entryCertificate.receivedQuantity);
         const soldQuantity = enhancedIssuedCertificates.reduce(
-          (sum, cert) => sum + Number(cert.soldQuantity), 
+          (sum, cert) => sum + Number(cert.soldQuantity),
           0
         );
         const remainingQuantity = receivedQuantity - soldQuantity;
-        
+
         return {
           entryCertificate: {
             ...entryCertificate,
@@ -2564,13 +2570,13 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           }
         };
       }));
-      
+
       res.json(detailedCertificates);
     } catch (error) {
       next(error);
     }
   });
-  
+
   // 2. Busca por lote do fornecedor
   app.get("/api/traceability/supplier/:supplierLot", isAuthenticated, async (req, res, next) => {
     try {
@@ -2588,38 +2594,38 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       } catch (e) {
         supplierLot = req.params.supplierLot;
       }
-      
+
       console.log(`Buscando por lote do fornecedor: ${supplierLot}`);
-      
+
       // Find entry certificate by supplier lot
       const allCertificates = await storage.getEntryCertificatesByTenant(user.tenantId);
       console.log(`Certificados encontrados: ${allCertificates.length}`);
-      
+
       // Log dos certificados para debug
       allCertificates.forEach(cert => {
         console.log(`Certificado ID: ${cert.id}, Lote Interno: ${cert.internalLot}, Lote Fornecedor: ${cert.supplierLot}`);
       });
-      
+
       const entryCertificate = allCertificates.find(c => c.supplierLot === supplierLot);
-      
+
       if (!entryCertificate) {
         console.log(`Lote do fornecedor não encontrado: ${supplierLot}`);
         return res.status(404).json({ message: "Supplier lot not found" });
       }
-      
+
       // Get all issued certificates for this entry certificate
       const issuedCertificates = await storage.getIssuedCertificatesByEntryCertificate(
         entryCertificate.id,
         user.tenantId
       );
-      
+
       // Get related entities
       const [product, supplier, manufacturer] = await Promise.all([
         storage.getProduct(entryCertificate.productId, user.tenantId),
         storage.getSupplier(entryCertificate.supplierId, user.tenantId),
         storage.getManufacturer(entryCertificate.manufacturerId, user.tenantId)
       ]);
-      
+
       // Get client info for issued certificates
       const enhancedIssuedCertificates = await Promise.all(issuedCertificates.map(async cert => {
         const client = await storage.getClient(cert.clientId, user.tenantId);
@@ -2628,15 +2634,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           clientName: client?.name
         };
       }));
-      
+
       // Calculate remaining quantity
       const receivedQuantity = Number(entryCertificate.receivedQuantity);
       const soldQuantity = enhancedIssuedCertificates.reduce(
-        (sum, cert) => sum + Number(cert.soldQuantity), 
+        (sum, cert) => sum + Number(cert.soldQuantity),
         0
       );
       const remainingQuantity = receivedQuantity - soldQuantity;
-      
+
       res.json({
         entryCertificate: {
           ...entryCertificate,
@@ -2656,7 +2662,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // 3. Busca por lote interno (manter para compatibilidade)
   app.get("/api/traceability/:internalLot", isAuthenticated, async (req, res, next) => {
     try {
@@ -2674,31 +2680,31 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       } catch (e) {
         internalLot = req.params.internalLot;
       }
-      
+
       console.log(`Buscando por lote interno: ${internalLot}`);
-      
+
       // Find entry certificate by internal lot
       const allCertificates = await storage.getEntryCertificatesByTenant(user.tenantId);
       const entryCertificate = allCertificates.find(c => c.internalLot === internalLot);
-      
+
       if (!entryCertificate) {
         console.log(`Lote interno não encontrado: ${internalLot}`);
         return res.status(404).json({ message: "Internal lot not found" });
       }
-      
+
       // Get all issued certificates for this entry certificate
       const issuedCertificates = await storage.getIssuedCertificatesByEntryCertificate(
         entryCertificate.id,
         user.tenantId
       );
-      
+
       // Get related entities
       const [product, supplier, manufacturer] = await Promise.all([
         storage.getProduct(entryCertificate.productId, user.tenantId),
         storage.getSupplier(entryCertificate.supplierId, user.tenantId),
         storage.getManufacturer(entryCertificate.manufacturerId, user.tenantId)
       ]);
-      
+
       // Get client info for issued certificates
       const enhancedIssuedCertificates = await Promise.all(issuedCertificates.map(async cert => {
         const client = await storage.getClient(cert.clientId, user.tenantId);
@@ -2707,15 +2713,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           clientName: client?.name
         };
       }));
-      
+
       // Calculate remaining quantity
       const receivedQuantity = Number(entryCertificate.receivedQuantity);
       const soldQuantity = enhancedIssuedCertificates.reduce(
-        (sum, cert) => sum + Number(cert.soldQuantity), 
+        (sum, cert) => sum + Number(cert.soldQuantity),
         0
       );
       const remainingQuantity = receivedQuantity - soldQuantity;
-      
+
       res.json({
         entryCertificate: {
           ...entryCertificate,
@@ -2735,16 +2741,16 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // 4. Busca avançada com filtros
   app.get("/api/traceability/search", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
       // Obter e decodificar parâmetros da busca
       const params = req.query;
-      
+
       console.log("Busca avançada com filtros:", params);
-      
+
       // Decodificar os parâmetros de texto que podem conter caracteres especiais
       // Certificar-se de decodificar corretamente, mesmo se já estiver parcialmente codificado
       let decodedInternalLot: string | undefined = undefined;
@@ -2760,7 +2766,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           decodedInternalLot = params.internalLot;
         }
       }
-      
+
       let decodedSupplierLot: string | undefined = undefined;
       if (params.supplierLot && typeof params.supplierLot === 'string') {
         try {
@@ -2774,46 +2780,46 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           decodedSupplierLot = params.supplierLot;
         }
       }
-      
+
       const productId = params.productId;
       const supplierId = params.supplierId;
       const manufacturerId = params.manufacturerId;
       const startDate = params.startDate;
       const endDate = params.endDate;
-      
+
       // Obter todos os certificados do tenant
       const allCertificates = await storage.getEntryCertificatesByTenant(user.tenantId);
-      
+
       // Aplicar filtros
       const filteredCertificates = allCertificates.filter(cert => {
         let matchesFilters = true;
-        
+
         if (decodedInternalLot) {
           matchesFilters = matchesFilters && cert.internalLot.toLowerCase().includes(decodedInternalLot.toLowerCase());
         }
-        
+
         if (decodedSupplierLot) {
           matchesFilters = matchesFilters && cert.supplierLot.toLowerCase().includes(decodedSupplierLot.toLowerCase());
         }
-        
+
         if (productId && typeof productId === 'string') {
           matchesFilters = matchesFilters && cert.productId === parseInt(productId, 10);
         }
-        
+
         if (supplierId && typeof supplierId === 'string') {
           matchesFilters = matchesFilters && cert.supplierId === parseInt(supplierId, 10);
         }
-        
+
         if (manufacturerId && typeof manufacturerId === 'string') {
           matchesFilters = matchesFilters && cert.manufacturerId === parseInt(manufacturerId, 10);
         }
-        
+
         if (startDate && typeof startDate === 'string') {
           const certDate = new Date(cert.createdAt);
           const filterDate = new Date(startDate);
           matchesFilters = matchesFilters && certDate >= filterDate;
         }
-        
+
         if (endDate && typeof endDate === 'string') {
           const certDate = new Date(cert.createdAt);
           const filterDate = new Date(endDate);
@@ -2821,15 +2827,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           filterDate.setHours(23, 59, 59, 999);
           matchesFilters = matchesFilters && certDate <= filterDate;
         }
-        
+
         return matchesFilters;
       });
-      
+
       // Se não encontrou nenhum certificado
       if (filteredCertificates.length === 0) {
         return res.status(200).json([]);
       }
-      
+
       // Processar detalhes para cada certificado encontrado
       const detailedCertificates = await Promise.all(filteredCertificates.map(async (entryCertificate) => {
         // Get all issued certificates for this entry certificate
@@ -2837,14 +2843,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           entryCertificate.id,
           user.tenantId
         );
-        
+
         // Get related entities
         const [product, supplier, manufacturer] = await Promise.all([
           storage.getProduct(entryCertificate.productId, user.tenantId),
           storage.getSupplier(entryCertificate.supplierId, user.tenantId),
           storage.getManufacturer(entryCertificate.manufacturerId, user.tenantId)
         ]);
-        
+
         // Get client info for issued certificates
         const enhancedIssuedCertificates = await Promise.all(issuedCertificates.map(async cert => {
           const client = await storage.getClient(cert.clientId, user.tenantId);
@@ -2853,15 +2859,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
             clientName: client?.name
           };
         }));
-        
+
         // Calculate remaining quantity
         const receivedQuantity = Number(entryCertificate.receivedQuantity);
         const soldQuantity = enhancedIssuedCertificates.reduce(
-          (sum, cert) => sum + Number(cert.soldQuantity), 
+          (sum, cert) => sum + Number(cert.soldQuantity),
           0
         );
         const remainingQuantity = receivedQuantity - soldQuantity;
-        
+
         return {
           entryCertificate: {
             ...entryCertificate,
@@ -2878,7 +2884,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           }
         };
       }));
-      
+
       res.json(detailedCertificates);
     } catch (error) {
       next(error);
@@ -2903,7 +2909,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         ...req.body,
         tenantId: user.tenantId
       });
-      
+
       const packageType = await storage.createPackageType(parsedBody);
       res.status(201).json(packageType);
     } catch (error) {
@@ -2918,11 +2924,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const packageType = await storage.getPackageType(Number(req.params.id), user.tenantId);
-      
+
       if (!packageType) {
         return res.status(404).json({ message: "Package type not found" });
       }
-      
+
       res.json(packageType);
     } catch (error) {
       next(error);
@@ -2933,15 +2939,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const packageType = await storage.updatePackageType(
-        Number(req.params.id), 
-        user.tenantId, 
+        Number(req.params.id),
+        user.tenantId,
         req.body
       );
-      
+
       if (!packageType) {
         return res.status(404).json({ message: "Package type not found" });
       }
-      
+
       res.json(packageType);
     } catch (error) {
       next(error);
@@ -2952,17 +2958,17 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const user = req.user!;
       const success = await storage.deletePackageType(Number(req.params.id), user.tenantId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Package type not found" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       next(error);
     }
   });
-  
+
   // Plans and Modules routes
   app.get("/api/plans", isAuthenticated, async (req, res) => {
     try {
@@ -3053,20 +3059,20 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       res.status(500).json({ message: "Error fetching tenant modules" });
     }
   });
-  
+
   // Endpoint para obter as funcionalidades disponíveis para o usuário
   app.get("/api/user/features", isAuthenticated, async (req, res) => {
     const user = req.user!;
     try {
       console.log(`[/api/user/features] Obtendo funcionalidades para usuário ${user.username} (ID: ${user.id}, Tenant: ${user.tenantId}, Role: ${user.role})`);
-      
+
       // Para administradores do sistema, retorna todas as funcionalidades
       if (user.role === "admin" || user.role === "system_admin") {
         console.log(`[/api/user/features] Usuário é administrador do sistema, retornando todas as funcionalidades`);
         const allFeatures = await storage.getModuleFeatures();
         return res.json(allFeatures);
       }
-      
+
       // Para outros usuários, retorna apenas as funcionalidades dos módulos do plano da tenant
       // 1. Encontrar o tenant
       const tenant = await storage.getTenant(user.tenantId);
@@ -3075,7 +3081,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         return res.status(404).json({ message: "Tenant não encontrado" });
       }
       console.log(`[/api/user/features] Tenant encontrado: ${tenant.name} (ID: ${tenant.id}, Plano: ${tenant.planId})`);
-      
+
       // 2. Obter os módulos do plano do tenant
       const planModules = await storage.getModulesByPlan(tenant.planId);
       if (!planModules || planModules.length === 0) {
@@ -3083,11 +3089,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         return res.json([]);
       }
       console.log(`[/api/user/features] Módulos do plano ${tenant.planId}:`, planModules.map(m => `${m.id} (${m.name})`));
-      
+
       // 3. Obter as funcionalidades associadas a esses módulos
       const moduleIds = planModules.map(module => module.id);
       console.log(`[/api/user/features] IDs dos módulos habilitados: ${moduleIds.join(', ')}`);
-      
+
       // 4. Buscar todas as features associadas aos módulos do plano da tenant
       const features = [];
       for (const moduleId of moduleIds) {
@@ -3095,7 +3101,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         console.log(`[/api/user/features] Módulo ${moduleId} tem ${moduleFeatures.length} funcionalidades`);
         features.push(...moduleFeatures);
       }
-      
+
       console.log(`[/api/user/features] Total de funcionalidades disponíveis: ${features.length}`);
       res.json(features);
     } catch (error) {
@@ -3103,15 +3109,15 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       res.status(500).json({ message: "Erro ao obter funcionalidades do usuário" });
     }
   });
-  
+
   // Rotas para gerenciamento de arquivos gerais (nova tabela 'files')
-  
+
   // Listar arquivos do tenant (com filtro opcional por categoria)
   app.get("/api/files", isAuthenticated, async (req, res) => {
     try {
       const { tenantId } = req.user!;
       const fileCategory = req.query.category as string | undefined;
-      
+
       const files = await storage.getFilesByTenant(tenantId, fileCategory);
       res.json(files);
     } catch (error) {
@@ -3119,14 +3125,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       res.status(500).json({ message: 'Erro ao listar arquivos' });
     }
   });
-  
+
   // Listar arquivos por entidade (tipo e ID)
   app.get("/api/files/entity/:type/:id", isAuthenticated, async (req, res) => {
     try {
       const { tenantId } = req.user!;
       const entityType = req.params.type;
       const entityId = Number(req.params.id);
-      
+
       const files = await storage.getFilesByEntity(entityType, entityId, tenantId);
       res.json(files);
     } catch (error) {
@@ -3134,37 +3140,37 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       res.status(500).json({ message: 'Erro ao listar arquivos da entidade' });
     }
   });
-  
+
   // Obter detalhes de um arquivo específico por ID
   app.get("/api/files/:id", isAuthenticated, async (req, res) => {
     try {
       const { tenantId } = req.user!;
       const fileId = Number(req.params.id);
-      
+
       const file = await storage.getFile(fileId, tenantId);
       if (!file) {
         return res.status(404).json({ message: 'Arquivo não encontrado' });
       }
-      
+
       res.json(file);
     } catch (error) {
       console.error('Erro ao obter detalhes do arquivo:', error);
       res.status(500).json({ message: 'Erro ao obter detalhes do arquivo' });
     }
   });
-  
+
   // Upload de arquivo com verificação de limites
-  app.post("/api/files/upload", 
-    isAuthenticated, 
+  app.post("/api/files/upload",
+    isAuthenticated,
     (req, res, next) => checkStorageLimits(req, res, next),
     updateStorageUsed,
-    tempUpload.single('file'), 
+    tempUpload.single('file'),
     async (req, res) => {
       try {
         if (!req.file) {
           return res.status(400).json({ message: 'Nenhum arquivo enviado' });
         }
-        
+
         const { tenantId } = req.user!;
         const {
           fileCategory = 'document',
@@ -3172,28 +3178,28 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           entityType = null,
           entityId = null
         } = req.body;
-        
+
         // Obter informações do arquivo
         const tempPath = req.file.path;
         const originalFileName = req.file.originalname;
         const fileSize = req.file.size;
         const fileType = req.file.mimetype;
         const fileSizeMB = getFileSizeInMB(tempPath);
-        
+
         // Gerar nome para armazenamento
         const storedFileName = req.file.filename;
-        
+
         // Mover arquivo para armazenamento permanente
         const finalPath = await moveFileToFinalStorage(
-          tempPath, 
-          tenantId, 
-          fileCategory, 
+          tempPath,
+          tenantId,
+          fileCategory,
           storedFileName
         );
-        
+
         // Gerar URL pública
         const publicUrl = getFileUrl(finalPath);
-        
+
         // Salvar metadados no banco
         const newFile = await storage.createFile({
           tenantId,
@@ -3209,7 +3215,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           fileSizeMB: fileSizeMB.toString(),
           publicUrl
         });
-        
+
         res.status(201).json(newFile);
       } catch (error) {
         console.error('Erro ao fazer upload de arquivo:', error);
@@ -3225,30 +3231,30 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       }
     }
   );
-  
+
   // Remover arquivo
   app.delete("/api/files/:id", isAuthenticated, async (req, res) => {
     try {
       const { tenantId } = req.user!;
       const fileId = Number(req.params.id);
-      
+
       // Obter detalhes do arquivo primeiro
       const file = await storage.getFile(fileId, tenantId);
       if (!file) {
         return res.status(404).json({ message: 'Arquivo não encontrado' });
       }
-      
+
       // Remover o arquivo físico
       if (file.filePath) {
         removeFile(file.filePath);
       }
-      
+
       // Remover do banco de dados
       const result = await storage.deleteFile(fileId, tenantId);
       if (!result) {
         return res.status(500).json({ message: 'Erro ao remover arquivo do banco de dados' });
       }
-      
+
       res.status(200).json({ message: 'Arquivo removido com sucesso' });
     } catch (error) {
       console.error('Erro ao remover arquivo:', error);
@@ -3263,36 +3269,36 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       // Obter contagem de tenants
       const tenants = await storage.getAllTenants();
       const activeTenantCount = tenants.filter(t => t.active).length;
-      
+
       // Obter contagem de usuários
       let userCount = 0;
       for (const tenant of tenants) {
         const tenantUsers = await storage.getUsersByTenant(tenant.id);
         userCount += tenantUsers.length;
       }
-      
+
       // Obter contagem de arquivos e tamanho de armazenamento
       const files = await storage.getAllFiles();
       const totalStorage = files.reduce((acc, file) => acc + (parseFloat(file.fileSizeMB) || 0), 0);
-      
+
       // Obter contagem de certificados nos últimos 30 dias
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       let certificateCount = 0;
       for (const tenant of tenants) {
         const issuedCertificates = await storage.getIssuedCertificatesByTenant(
-          tenant.id, 
+          tenant.id,
           { startDate: thirtyDaysAgo.toISOString() }
         );
         certificateCount += issuedCertificates.length;
       }
-      
+
       // Tenants recentes (5 mais recentes)
       const recentTenants = tenants
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 5);
-      
+
       // Usuários recentes (5 mais recentes)
       let allUsers: any[] = [];
       for (const tenant of tenants) {
@@ -3302,21 +3308,21 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           tenantName: tenant.name
         })));
       }
-      
+
       const recentUsers = allUsers
         .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
         .slice(0, 5)
         .map(({ password, ...rest }) => rest); // Remove passwords
-      
+
       // Verificar se há tenants com armazenamento acima do limite
       const alerts = [];
       const storageData = [];
-      
+
       for (const tenant of tenants) {
         const plan = await storage.getPlan(tenant.planId);
         const tenantFiles = files.filter(f => f.tenantId === tenant.id);
         const storageUsed = tenantFiles.reduce((acc, file) => acc + (parseFloat(file.fileSizeMB) || 0), 0);
-        
+
         storageData.push({
           id: tenant.id,
           name: tenant.name,
@@ -3326,11 +3332,11 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           planName: plan?.name || 'Desconhecido'
         });
       }
-      
+
       const tenantsOverLimit = storageData.filter(
         t => t.storageUsed > t.maxStorage && t.maxStorage > 0
       );
-      
+
       if (tenantsOverLimit.length > 0) {
         alerts.push({
           level: 'error',
@@ -3338,7 +3344,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           message: `${tenantsOverLimit.length} tenant(s) excederam o limite de armazenamento. Verifique a página de Armazenamento.`
         });
       }
-      
+
       res.json({
         tenantCount: tenants.length,
         activeTenantCount,
@@ -3354,21 +3360,21 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Listar todos os tenants para o admin
   app.get("/api/admin/tenants", isAdmin, async (req, res, next) => {
     try {
       let tenants = await storage.getAllTenants();
       const files = await storage.getAllFiles();
-      
+
       // Adicionar informações de uso de armazenamento
       const enhancedTenants = [];
-      
+
       for (const tenant of tenants) {
         const plan = await storage.getPlan(tenant.planId);
         const tenantFiles = files.filter(f => f.tenantId === tenant.id);
         const storageUsed = tenantFiles.reduce((acc, file) => acc + (parseFloat(file.fileSizeMB) || 0), 0);
-        
+
         enhancedTenants.push({
           ...tenant,
           storageUsed,
@@ -3377,13 +3383,13 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           planName: plan?.name || 'Desconhecido'
         });
       }
-      
+
       res.json(enhancedTenants);
     } catch (error) {
       next(error);
     }
   });
-  
+
   // Criar tenant (admin)
   app.post("/api/admin/tenants", isAdmin, async (req, res, next) => {
     try {
@@ -3397,7 +3403,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Atualizar tenant (admin)
   app.patch("/api/admin/tenants/:id", isAdmin, async (req, res, next) => {
     try {
@@ -3410,7 +3416,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Excluir tenant (admin)
   app.delete("/api/admin/tenants/:id", isAdmin, async (req, res, next) => {
     try {
@@ -3425,7 +3431,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Rotas para gerenciamento de assinaturas de tenants
-  
+
   // Obter status de assinatura de um tenant
   app.get("/api/admin/tenants/:id/subscription", isAdmin, async (req, res, next) => {
     try {
@@ -3435,7 +3441,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       }
 
       const plan = await storage.getPlan(tenant.planId);
-      
+
       res.json({
         tenantId: tenant.id,
         tenantName: tenant.name,
@@ -3459,13 +3465,13 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       // Garantir que o ID seja sempre um número válido
       const idParam = req.params.id;
       const tenantId = !isNaN(Number(idParam)) ? Number(idParam) : null;
-      
+
       if (tenantId === null) {
         return res.status(400).json({ message: "ID do tenant inválido" });
       }
-      
+
       const tenant = await storage.getTenant(tenantId);
-      
+
       if (!tenant) {
         return res.status(404).json({ message: "Tenant não encontrado" });
       }
@@ -3477,18 +3483,18 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       });
 
       const { paymentDate, durationMonths } = renewalSchema.parse(req.body);
-      
+
       // Se data de pagamento não for fornecida, usa a data atual
       const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
-      
+
       // Atualiza o status da assinatura
       const result = await updateSubscriptionStatus(tenantId, paymentDateObj, durationMonths);
-      
+
       // Se o tenant estava inativo, reativa
       if (!tenant.active) {
         await storage.updateTenant(tenantId, { active: true });
       }
-      
+
       res.status(200).json({
         message: "Assinatura renovada com sucesso",
         ...result
@@ -3506,18 +3512,18 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const tenantId = Number(req.params.id);
       const tenant = await storage.getTenant(tenantId);
-      
+
       if (!tenant) {
         return res.status(404).json({ message: "Tenant não encontrado" });
       }
-      
+
       // Atualiza para status bloqueado (overdue), mas mantém tenant ativo
       // Correção: Um tenant bloqueado apenas altera o paymentStatus, não a propriedade active
-      await storage.updateTenant(tenantId, { 
+      await storage.updateTenant(tenantId, {
         paymentStatus: "overdue"
         // active permanece inalterado
       });
-      
+
       res.status(200).json({
         message: "Tenant bloqueado com sucesso",
         tenantId,
@@ -3534,18 +3540,18 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const tenantId = Number(req.params.id);
       const tenant = await storage.getTenant(tenantId);
-      
+
       if (!tenant) {
         return res.status(404).json({ message: "Tenant não encontrado" });
       }
-      
+
       // Atualiza para status ativo, mas não altera a propriedade active
       // Correção: Desbloquear apenas altera o paymentStatus para active
-      await storage.updateTenant(tenantId, { 
+      await storage.updateTenant(tenantId, {
         paymentStatus: "active"
         // active permanece inalterado
       });
-      
+
       res.status(200).json({
         message: "Tenant desbloqueado com sucesso",
         tenantId,
@@ -3556,7 +3562,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Gerenciamento de planos
   app.get("/api/admin/plans", isAdmin, async (req, res, next) => {
     try {
@@ -3566,20 +3572,20 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Criar plano
   app.post("/api/admin/plans", isAdmin, async (req, res, next) => {
     try {
       // Validar que todos os campos obrigatórios estão presentes
       const { name, code, description, maxStorage, maxFileSize, price } = req.body;
-      
+
       if (!name || !code || !description) {
-        return res.status(400).json({ 
-          message: "Campos obrigatórios faltando", 
-          details: "Nome, código e descrição são obrigatórios" 
+        return res.status(400).json({
+          message: "Campos obrigatórios faltando",
+          details: "Nome, código e descrição são obrigatórios"
         });
       }
-      
+
       // Preparar os dados para criar o plano
       const planData = {
         name,
@@ -3590,20 +3596,20 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         price: price || 0,
         maxUsers: req.body.maxUsers || 1
       };
-      
+
       const plan = await storage.createPlan(planData);
       res.status(201).json(plan);
     } catch (error) {
       console.error('Erro ao criar plano:', error);
-      
+
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
-      
+
       next(error);
     }
   });
-  
+
   // Atualizar plano (PATCH - parcial)
   app.patch("/api/admin/plans/:id", isAdmin, async (req, res, next) => {
     try {
@@ -3616,21 +3622,21 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Atualizar plano (PUT - completo)
   app.put("/api/admin/plans/:id", isAdmin, async (req, res, next) => {
     try {
       const id = Number(req.params.id);
-      
+
       // Verificar se o plano existe
       const existingPlan = await storage.getPlan(id);
       if (!existingPlan) {
         return res.status(404).json({ message: "Plano não encontrado" });
       }
-      
+
       // Extrair dados do corpo da requisição
       const { price, maxStorage, maxFileSize, description } = req.body;
-      
+
       // Atualizar o plano
       const updatedPlan = await storage.updatePlan(id, {
         price: price !== undefined ? price : existingPlan.price,
@@ -3638,14 +3644,14 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         maxFileSize: maxFileSize !== undefined ? maxFileSize : existingPlan.maxFileSize,
         description: description !== undefined ? description : existingPlan.description
       });
-      
+
       res.json(updatedPlan);
     } catch (error) {
       console.error('Erro ao atualizar plano:', error);
       next(error);
     }
   });
-  
+
   // Excluir plano
   app.delete("/api/admin/plans/:id", isAdmin, async (req, res, next) => {
     try {
@@ -3658,7 +3664,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Módulos disponíveis
   app.get("/api/admin/modules", isAdmin, async (req, res, next) => {
     try {
@@ -3668,7 +3674,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Criar novo módulo
   app.post("/api/admin/modules", isAdmin, async (req, res, next) => {
     try {
@@ -3679,7 +3685,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Atualizar módulo
   app.put("/api/admin/modules/:id", isAdmin, async (req, res, next) => {
     try {
@@ -3693,7 +3699,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Excluir módulo
   app.delete("/api/admin/modules/:id", isAdmin, async (req, res, next) => {
     try {
@@ -3707,9 +3713,9 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Rotas para gerenciamento de funcionalidades de módulos
-  
+
   // Obter todas as funcionalidades
   app.get("/api/admin/module-features", isAdmin, async (req, res, next) => {
     try {
@@ -3720,7 +3726,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Obter funcionalidades por módulo
   app.get("/api/admin/modules/:id/features", isAdmin, async (req, res, next) => {
     try {
@@ -3732,24 +3738,24 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Obter uma funcionalidade específica
   app.get("/api/admin/module-features/:id", isAdmin, async (req, res, next) => {
     try {
       const featureId = Number(req.params.id);
       const feature = await storage.getModuleFeature(featureId);
-      
+
       if (!feature) {
         return res.status(404).json({ message: "Feature not found" });
       }
-      
+
       res.json(feature);
     } catch (error) {
       console.error('Erro ao buscar funcionalidade:', error);
       next(error);
     }
   });
-  
+
   // Criar uma nova funcionalidade
   app.post("/api/admin/module-features", isAdmin, async (req, res, next) => {
     try {
@@ -3760,51 +3766,51 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Atualizar uma funcionalidade
   app.put("/api/admin/module-features/:id", isAdmin, async (req, res, next) => {
     try {
       const featureId = Number(req.params.id);
       const updatedFeature = await storage.updateModuleFeature(featureId, req.body);
-      
+
       if (!updatedFeature) {
         return res.status(404).json({ message: "Feature not found" });
       }
-      
+
       res.json(updatedFeature);
     } catch (error) {
       console.error('Erro ao atualizar funcionalidade:', error);
       next(error);
     }
   });
-  
+
   // Excluir uma funcionalidade
   app.delete("/api/admin/module-features/:id", isAdmin, async (req, res, next) => {
     try {
       const featureId = Number(req.params.id);
       const success = await storage.deleteModuleFeature(featureId);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Feature not found or cannot be deleted" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       console.error('Erro ao excluir funcionalidade:', error);
       next(error);
     }
   });
-  
+
   // Verificar se uma funcionalidade está acessível para um tenant
   app.get("/api/features/check-access", isAuthenticated, async (req, res, next) => {
     try {
       const { featurePath } = req.query;
       const tenantId = req.user!.tenantId;
-      
+
       if (!featurePath || typeof featurePath !== 'string') {
         return res.status(400).json({ message: "Feature path is required" });
       }
-      
+
       const isAccessible = await storage.isFeatureAccessible(featurePath, tenantId);
       res.json({ isAccessible });
     } catch (error) {
@@ -3812,28 +3818,28 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Obter módulos de um plano
   app.get("/api/admin/plans/:id/modules", isAdmin, async (req, res, next) => {
     try {
       const planId = Number(req.params.id);
-      
+
       // Verificar se o plano existe
       const plan = await storage.getPlan(planId);
       if (!plan) {
         return res.status(404).json({ message: "Plano não encontrado" });
       }
-      
+
       // Obter módulos do plano
       const modules = await storage.getModulesByPlan(planId);
-      
+
       // Processar os dados para retornar na estrutura correta para o frontend
       // Vamos retornar o formato { planId, moduleId } que o frontend espera
       const planModuleData = modules.map(module => ({
         planId: planId,
         moduleId: module.id
       }));
-      
+
       // Retornar como JSON em vez de HTML
       res.setHeader('Content-Type', 'application/json');
       res.json(planModuleData);
@@ -3848,36 +3854,36 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     try {
       const planId = Number(req.params.id);
       const { moduleIds } = req.body;
-      
+
       if (!Array.isArray(moduleIds)) {
         return res.status(400).json({ message: "moduleIds must be an array" });
       }
-      
+
       const success = await storage.updatePlanModules(planId, moduleIds);
       if (!success) {
         return res.status(404).json({ message: "Failed to update plan modules" });
       }
-      
+
       res.status(204).end();
     } catch (error) {
       console.error('Erro ao atualizar módulos do plano:', error);
       next(error);
     }
   });
-  
+
   // Gerenciamento de armazenamento
   app.get("/api/admin/storage", isAdmin, async (req, res, next) => {
     try {
       const tenants = await storage.getAllTenants();
       const files = await storage.getAllFiles();
-      
+
       const storageData = [];
-      
+
       for (const tenant of tenants) {
         const plan = await storage.getPlan(tenant.planId);
         const tenantFiles = files.filter(f => f.tenantId === tenant.id);
         const storageUsed = tenantFiles.reduce((acc, file) => acc + (parseFloat(file.fileSizeMB) || 0), 0);
-        
+
         storageData.push({
           id: tenant.id,
           name: tenant.name,
@@ -3887,31 +3893,31 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           planName: plan?.name || 'Desconhecido'
         });
       }
-      
+
       res.json(storageData);
     } catch (error) {
       next(error);
     }
   });
-  
+
   // Limpar arquivos não utilizados de um tenant
   app.post("/api/admin/storage/:tenantId/cleanup", isAdmin, async (req, res, next) => {
     try {
       const tenantId = Number(req.params.tenantId);
-      
+
       // Implementação básica - remover arquivos que não estão vinculados a nenhuma entidade
       const files = await storage.getFilesByTenant(tenantId);
       const unusedFiles = files.filter(f => !f.entityId);
-      
+
       let filesRemoved = 0;
       let spaceSaved = 0;
-      
+
       for (const file of unusedFiles) {
         // Remover arquivo físico
         if (file.filePath) {
           await removeFile(file.filePath);
         }
-        
+
         // Remover do banco de dados
         const success = await storage.deleteFile(file.id, tenantId);
         if (success) {
@@ -3919,7 +3925,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           spaceSaved += parseFloat(file.fileSizeMB) || 0;
         }
       }
-      
+
       res.json({
         success: true,
         filesRemoved,
@@ -3929,13 +3935,13 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Usuários administrativos
   app.get("/api/admin/users", isAdmin, async (req, res, next) => {
     try {
       const tenants = await storage.getAllTenants();
       let allUsers = [];
-      
+
       for (const tenant of tenants) {
         const users = await storage.getUsersByTenant(tenant.id);
         allUsers.push(...users.map(user => ({
@@ -3944,43 +3950,43 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           tenantName: tenant.name
         })));
       }
-      
+
       res.json(allUsers);
     } catch (error) {
       next(error);
     }
   });
-  
+
   // Atualizar usuário administrativo
   app.put("/api/admin/users/:id", isAdmin, async (req, res, next) => {
     try {
       const userId = Number(req.params.id);
       const { username, name, email, password, role, active } = req.body;
-      
+
       // Verificar se o usuário existe
       const existingUser = await storage.getUser(userId);
       if (!existingUser) {
         return res.status(404).json({ message: "Usuário não encontrado" });
       }
-      
+
       // Preparar dados para atualização
       const updateData: any = {};
-      
+
       if (username !== undefined) updateData.username = username;
       if (name !== undefined) updateData.name = name;
       if (email !== undefined) updateData.email = email;
       if (role !== undefined) updateData.role = role;
       if (active !== undefined) updateData.active = active;
-      
+
       // Se a senha foi fornecida, hash ela
       if (password) {
         const { hashPassword } = await import('./auth');
         updateData.password = await hashPassword(password);
       }
-      
+
       // Atualizar o usuário
       const updatedUser = await storage.updateUser(userId, updateData);
-      
+
       // Remover senha da resposta
       if (updatedUser) {
         const { password, ...userWithoutPassword } = updatedUser;
@@ -3993,28 +3999,28 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       next(error);
     }
   });
-  
+
   // Criar novo usuário (admin)
   app.post("/api/admin/users", isAdmin, async (req, res, next) => {
     try {
       const { username, name, password, role, tenantId, active } = req.body;
-      
+
       // Verificar se o tenant existe
       const tenant = await storage.getTenant(Number(tenantId));
       if (!tenant) {
         return res.status(404).json({ message: "Tenant não encontrado" });
       }
-      
+
       // Verificar se o nome de usuário já existe
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(400).json({ message: "Nome de usuário já existe" });
       }
-      
+
       // Hash da senha antes de criar o usuário
       const { hashPassword } = await import('./auth');
       const hashedPassword = await hashPassword(password);
-      
+
       // Criar o usuário
       const newUser = await storage.createUser({
         username,
@@ -4024,7 +4030,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         tenantId: Number(tenantId),
         active: active !== undefined ? active : true
       });
-      
+
       // Remover senha da resposta
       const { password: pwd, ...userWithoutPassword } = newUser;
       res.status(201).json(userWithoutPassword);
@@ -4033,6 +4039,122 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: error.errors });
       }
+      next(error);
+    }
+  });
+
+  // Importação em Lote
+  const { processImportFile, generateTemplate } = await import("./lib/bulk-import");
+
+  // Endpoint para baixar template
+  app.get("/api/import/template/:entity", isAuthenticated, (req, res) => {
+    try {
+      const { entity } = req.params;
+      const csvTemplate = generateTemplate(entity);
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="template_${entity}.csv"`);
+      res.send(csvTemplate);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Endpoint para upload e processamento
+  app.post("/api/import/:entity", isAuthenticated, tempUpload.single('file'), async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado" });
+      }
+
+      const { entity } = req.params;
+      const tenantId = req.user!.tenantId;
+
+      // Processar arquivo
+      const fs = await import('fs');
+      const fileBuffer = fs.readFileSync(req.file.path);
+
+      const result = await processImportFile(fileBuffer, req.file.originalname, entity, tenantId);
+
+      // Persistir dados válidos
+      const finalSuccesses = [];
+
+      for (const successItem of result.successes) {
+        try {
+          const data = successItem.data;
+
+          switch (entity) {
+            case 'suppliers':
+              await storage.createSupplier(data);
+              break;
+            case 'manufacturers':
+              await storage.createManufacturer(data);
+              break;
+            case 'clients':
+              await storage.createClient(data);
+              break;
+            case 'categories':
+              await storage.createProductCategory(data);
+              break;
+            case 'subcategories':
+              await storage.createProductSubcategory(data);
+              break;
+            case 'products_base':
+              await storage.createProductBase(data);
+              break;
+            default:
+              throw new Error(`Entidade ${entity} não suportada para persistência.`);
+          }
+          finalSuccesses.push(successItem);
+        } catch (dbError: any) {
+          // Se falhar na persistência, move para lista de erros
+          result.errorCount++;
+          result.successCount--;
+          result.errors.push({
+            row: successItem.row,
+            message: `Erro ao salvar no banco: ${dbError.message}`,
+            data: successItem.data
+          });
+        }
+      }
+
+      // Atualiza lista de sucessos apenas com os que foram persistidos
+      result.successes = finalSuccesses;
+
+      // Remover arquivo temporário
+      // The 'fs' import was already done above, so we don't need to re-import it.
+      if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+
+      res.json(result);
+    } catch (error) {
+      // Limpar arquivo se existir e der erro fatal
+      if (req.file) {
+        const fs = await import('fs');
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      }
+      next(error);
+    }
+  });
+
+  // Mock Data Management
+  app.post("/api/admin/mock-data", isAdmin, async (req, res, next) => {
+    try {
+      const { generateMockData } = await import("./services/mock-data");
+      const result = await generateMockData();
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/admin/mock-data", isAdmin, async (req, res, next) => {
+    try {
+      const { clearMockData } = await import("./services/mock-data");
+      const result = await clearMockData();
+      res.json(result);
+    } catch (error) {
       next(error);
     }
   });

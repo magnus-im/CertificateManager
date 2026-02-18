@@ -11,30 +11,31 @@ import { useToast } from "@/hooks/use-toast";
 import { ProductCategoryForm } from "@/components/products/product-category-form";
 import { ProductCategory } from "@shared/schema";
 import { Link } from "wouter";
+import { BulkImportModal } from "@/components/bulk-import-modal";
 
 export default function ProductCategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const { toast } = useToast();
-  
+
   const { data: categories, isLoading } = useQuery<ProductCategory[]>({
     queryKey: ["/api/product-categories"],
   });
-  
+
   // Filter categories based on search query
   const filteredCategories = categories
-    ? categories.filter(category => 
-        category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? categories.filter(category =>
+      category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (category.description && category.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
     : [];
-  
+
   const handleEdit = (categoryId: number) => {
     setSelectedCategoryId(categoryId);
     setIsDialogOpen(true);
   };
-  
+
   const handleAddNew = () => {
     setSelectedCategoryId(null);
     setIsDialogOpen(true);
@@ -45,12 +46,15 @@ export default function ProductCategoriesPage() {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-medium">Categorias de Produtos</h1>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Categoria
-          </Button>
+          <div className="flex gap-2">
+            <BulkImportModal entity="categories" />
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Categoria
+            </Button>
+          </div>
         </div>
-        
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Buscar Categorias</CardTitle>
@@ -58,7 +62,7 @@ export default function ProductCategoriesPage() {
           <CardContent>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input 
+              <Input
                 placeholder="Buscar por nome ou descrição..."
                 className="pl-10"
                 value={searchQuery}
@@ -67,7 +71,7 @@ export default function ProductCategoriesPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -90,7 +94,7 @@ export default function ProductCategoriesPage() {
                       <TableRow>
                         <TableCell colSpan={4} className="text-center py-8 text-gray-500">
                           <FolderTree className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                          {searchQuery 
+                          {searchQuery
                             ? "Nenhuma categoria encontrada com os critérios de busca"
                             : "Nenhuma categoria cadastrada ainda"}
                         </TableCell>
@@ -109,9 +113,9 @@ export default function ProductCategoriesPage() {
                             </Button>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleEdit(category.id)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -130,7 +134,7 @@ export default function ProductCategoriesPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -138,8 +142,8 @@ export default function ProductCategoriesPage() {
               {selectedCategoryId ? "Editar Categoria" : "Nova Categoria"}
             </DialogTitle>
           </DialogHeader>
-          <ProductCategoryForm 
-            categoryId={selectedCategoryId} 
+          <ProductCategoryForm
+            categoryId={selectedCategoryId}
             onSuccess={() => setIsDialogOpen(false)}
           />
         </DialogContent>

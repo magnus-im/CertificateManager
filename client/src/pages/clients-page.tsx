@@ -13,27 +13,28 @@ import { insertClientSchema, Client } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { BulkImportModal } from "@/components/bulk-import-modal";
 
 export default function ClientsPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  
+
   // Fetch clients
   const { data: clients, isLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
-  
+
   // Filter clients based on search query
   const filteredClients = clients
-    ? clients.filter(client => 
-        client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.cnpj.includes(searchQuery) ||
-        (client.internalCode && client.internalCode.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? clients.filter(client =>
+      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.cnpj.includes(searchQuery) ||
+      (client.internalCode && client.internalCode.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
     : [];
-  
+
   // Form for adding/editing clients
   const form = useForm<Omit<Client, "id" | "tenantId">>({
     resolver: zodResolver(insertClientSchema.omit({ tenantId: true })),
@@ -45,7 +46,7 @@ export default function ClientsPage() {
       internalCode: "",
     },
   });
-  
+
   // Set form values when editing
   const handleEdit = (client: Client) => {
     setEditingClient(client);
@@ -58,7 +59,7 @@ export default function ClientsPage() {
     });
     setIsDialogOpen(true);
   };
-  
+
   // Reset form when adding new
   const handleAddNew = () => {
     setEditingClient(null);
@@ -71,7 +72,7 @@ export default function ClientsPage() {
     });
     setIsDialogOpen(true);
   };
-  
+
   // Mutation for adding/editing client
   const clientMutation = useMutation({
     mutationFn: async (data: Omit<Client, "id" | "tenantId">) => {
@@ -88,8 +89,8 @@ export default function ClientsPage() {
       setIsDialogOpen(false);
       toast({
         title: editingClient ? "Cliente atualizado" : "Cliente adicionado",
-        description: editingClient 
-          ? "O cliente foi atualizado com sucesso." 
+        description: editingClient
+          ? "O cliente foi atualizado com sucesso."
           : "O cliente foi adicionado com sucesso.",
       });
     },
@@ -101,7 +102,7 @@ export default function ClientsPage() {
       });
     },
   });
-  
+
   // Delete client mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -122,13 +123,13 @@ export default function ClientsPage() {
       });
     },
   });
-  
+
   const handleDelete = (id: number) => {
     if (window.confirm("Tem certeza que deseja remover este cliente?")) {
       deleteMutation.mutate(id);
     }
   };
-  
+
   const onSubmit = (data: Omit<Client, "id" | "tenantId">) => {
     clientMutation.mutate(data);
   };
@@ -138,12 +139,15 @@ export default function ClientsPage() {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-medium">Clientes</h1>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Cliente
-          </Button>
+          <div className="flex gap-2">
+            <BulkImportModal entity="clients" />
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Cliente
+            </Button>
+          </div>
         </div>
-        
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Buscar Clientes</CardTitle>
@@ -151,7 +155,7 @@ export default function ClientsPage() {
           <CardContent>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input 
+              <Input
                 placeholder="Buscar por nome, CNPJ ou código interno..."
                 className="pl-10"
                 value={searchQuery}
@@ -160,7 +164,7 @@ export default function ClientsPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -185,7 +189,7 @@ export default function ClientsPage() {
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                           <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                          {searchQuery 
+                          {searchQuery
                             ? "Nenhum cliente encontrado com os critérios de busca"
                             : "Nenhum cliente cadastrado ainda"}
                         </TableCell>
@@ -199,16 +203,16 @@ export default function ClientsPage() {
                           <TableCell>{client.address || "-"}</TableCell>
                           <TableCell>{client.internalCode || "-"}</TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleEdit(client)}
                               disabled={clientMutation.isPending}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="icon"
                               onClick={() => handleDelete(client.id)}
                               disabled={deleteMutation.isPending}
@@ -226,7 +230,7 @@ export default function ClientsPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -234,7 +238,7 @@ export default function ClientsPage() {
               {editingClient ? "Editar Cliente" : "Novo Cliente"}
             </DialogTitle>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -250,7 +254,7 @@ export default function ClientsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="cnpj"
@@ -264,7 +268,7 @@ export default function ClientsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -279,7 +283,7 @@ export default function ClientsPage() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="internalCode"
@@ -294,7 +298,7 @@ export default function ClientsPage() {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="address"
@@ -308,7 +312,7 @@ export default function ClientsPage() {
                   </FormItem>
                 )}
               />
-              
+
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
                   type="button"
@@ -318,7 +322,7 @@ export default function ClientsPage() {
                 >
                   Cancelar
                 </Button>
-                <Button 
+                <Button
                   type="submit"
                   disabled={clientMutation.isPending}
                 >

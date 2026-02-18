@@ -24,6 +24,7 @@ import AdminPlansPage from "@/pages/admin/plans-page";
 import AdminStoragePage from "@/pages/admin/storage-page";
 import AdminUsersPage from "@/pages/admin/users-page";
 import AdminModuleFeaturesPage from "@/pages/admin/module-features-page";
+import AdminMockDataPage from "@/pages/admin/mock-data-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AdminRoute } from "./lib/admin-route";
 import { AuthProvider } from "./hooks/use-auth";
@@ -38,21 +39,21 @@ function Router() {
       <ProtectedRoute path="/certificates" component={CertificatesPage} />
       <ProtectedRoute path="/issued-certificates" component={IssuedCertificatesPage} />
       <ProtectedRoute path="/issued-certificates/:id" component={IssuedCertificateDetailPage} />
-      
+
       {/* Produtos - Hierarquia */}
       <ProtectedRoute path="/product-categories" component={ProductCategoriesPage} />
       <ProtectedRoute path="/product-subcategories" component={ProductSubcategoriesPage} />
       <ProtectedRoute path="/product-base" component={ProductBasePage} />
       <ProtectedRoute path="/products" component={ProductsPage} />
       <ProtectedRoute path="/products/:id" component={ProductDetailPage} />
-      
+
       <ProtectedRoute path="/package-types" component={PackageTypesPage} />
       <ProtectedRoute path="/suppliers" component={SuppliersPage} />
       <ProtectedRoute path="/manufacturers" component={ManufacturersPage} />
       <ProtectedRoute path="/clients" component={ClientsPage} />
       <ProtectedRoute path="/traceability" component={TraceabilityPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
-      
+
       {/* Rotas do Painel Administrativo - Apenas para administradores */}
       <AdminRoute path="/admin" component={AdminDashboardPage} />
       <AdminRoute path="/admin/tenants" component={AdminTenantsPage} />
@@ -60,7 +61,8 @@ function Router() {
       <AdminRoute path="/admin/storage" component={AdminStoragePage} />
       <AdminRoute path="/admin/users" component={AdminUsersPage} />
       <AdminRoute path="/admin/module-features" component={AdminModuleFeaturesPage} />
-      
+      <AdminRoute path="/admin/mock-data" component={AdminMockDataPage} />
+
       <Route component={NotFound} />
     </Switch>
   );

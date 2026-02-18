@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ProductBaseForm } from "@/components/products/product-base-form";
 import { ProductBase, ProductSubcategory } from "@shared/schema";
 import { Link, useLocation } from "wouter";
+import { BulkImportModal } from "@/components/bulk-import-modal";
 
 export default function ProductBasePage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,7 +20,7 @@ export default function ProductBasePage() {
   const [subcategoryId, setSubcategoryId] = useState<number | null>(null);
   const [location] = useLocation();
   const { toast } = useToast();
-  
+
   // Extract subcategoryId from URL if present
   useEffect(() => {
     const params = new URLSearchParams(location.split("?")[1]);
@@ -28,18 +29,18 @@ export default function ProductBasePage() {
       setSubcategoryId(Number(subcategoryIdParam));
     }
   }, [location]);
-  
+
   // Get subcategory details if subcategoryId is available
   const { data: subcategory } = useQuery<ProductSubcategory>({
     queryKey: [`/api/product-subcategories/${subcategoryId}`],
     enabled: !!subcategoryId,
   });
-  
+
   // Get product bases
   const { data: productBases, isLoading } = useQuery<ProductBase[]>({
     queryKey: ["/api/product-base", { subcategoryId }],
     queryFn: async () => {
-      const endpoint = subcategoryId 
+      const endpoint = subcategoryId
         ? `/api/product-base?subcategoryId=${subcategoryId}`
         : "/api/product-base";
       const response = await fetch(endpoint);
@@ -49,22 +50,22 @@ export default function ProductBasePage() {
       return response.json();
     },
   });
-  
+
   // Filter product bases based on search query
   const filteredProductBases = productBases
-    ? productBases.filter(base => 
-        base.technicalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (base.commercialName && base.commercialName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (base.internalCode && base.internalCode.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (base.description && base.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? productBases.filter(base =>
+      base.technicalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (base.commercialName && base.commercialName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (base.internalCode && base.internalCode.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (base.description && base.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
     : [];
-  
+
   const handleEdit = (productBaseId: number) => {
     setSelectedProductBaseId(productBaseId);
     setIsDialogOpen(true);
   };
-  
+
   const handleAddNew = () => {
     setSelectedProductBaseId(null);
     setIsDialogOpen(true);
@@ -80,28 +81,31 @@ export default function ProductBasePage() {
               {subcategoryId ? "Voltar para Subcategorias" : "Voltar para Produtos"}
             </Link>
           </Button>
-          
+
           {subcategory && (
             <h1 className="text-2xl font-medium ml-2">
               Produtos Base de {subcategory.name}
             </h1>
           )}
-          
+
           {!subcategory && (
             <h1 className="text-2xl font-medium ml-2">
               Todos os Produtos Base
             </h1>
           )}
         </div>
-        
+
         <div className="flex justify-between items-center mb-6">
           <div></div>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Produto Base
-          </Button>
+          <div className="flex gap-2">
+            <BulkImportModal entity="products_base" />
+            <Button onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Produto Base
+            </Button>
+          </div>
         </div>
-        
+
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Buscar Produtos Base</CardTitle>
@@ -109,7 +113,7 @@ export default function ProductBasePage() {
           <CardContent>
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input 
+              <Input
                 placeholder="Buscar por nome técnico, comercial ou código..."
                 className="pl-10"
                 value={searchQuery}
@@ -118,7 +122,7 @@ export default function ProductBasePage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -143,7 +147,7 @@ export default function ProductBasePage() {
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                           <Database className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                          {searchQuery 
+                          {searchQuery
                             ? "Nenhum produto base encontrado com os critérios de busca"
                             : "Nenhum produto base cadastrado ainda"}
                         </TableCell>
@@ -164,9 +168,9 @@ export default function ProductBasePage() {
                             </Button>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleEdit(base.id)}
                             >
                               <Pencil className="h-4 w-4" />
@@ -185,7 +189,7 @@ export default function ProductBasePage() {
           </CardContent>
         </Card>
       </div>
-      
+
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -193,9 +197,9 @@ export default function ProductBasePage() {
               {selectedProductBaseId ? "Editar Produto Base" : "Novo Produto Base"}
             </DialogTitle>
           </DialogHeader>
-          <ProductBaseForm 
+          <ProductBaseForm
             productBaseId={selectedProductBaseId}
-            defaultSubcategoryId={subcategoryId} 
+            defaultSubcategoryId={subcategoryId}
             onSuccess={() => setIsDialogOpen(false)}
           />
         </DialogContent>

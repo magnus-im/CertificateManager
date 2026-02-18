@@ -3,7 +3,7 @@ import AdminLayout from "@/components/layout/admin-layout";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Building, Users, FileBox, AlertTriangle } from "lucide-react";
+import { Loader2, Building, Users, FileBox, AlertTriangle, Database } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +72,7 @@ export default function AdminDashboardPage() {
                   </p>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
                   </p>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
@@ -102,7 +102,7 @@ export default function AdminDashboardPage() {
                   </p>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
@@ -146,7 +146,7 @@ export default function AdminDashboardPage() {
                       ))
                     )}
                   </div>
-                  
+
                   <div className="mt-4 flex justify-end">
                     <Link href="/admin/tenants">
                       <Button variant="outline" size="sm">
@@ -183,7 +183,7 @@ export default function AdminDashboardPage() {
                       ))
                     )}
                   </div>
-                  
+
                   <div className="mt-4 flex justify-end">
                     <Link href="/admin/users">
                       <Button variant="outline" size="sm">
@@ -233,6 +233,12 @@ export default function AdminDashboardPage() {
                     <Button variant="outline" className="w-full h-24 flex flex-col">
                       <Users className="h-6 w-6 mb-2" />
                       <span>Gerenciar Usuários</span>
+                    </Button>
+                  </Link>
+                  <Link href="/admin/mock-data">
+                    <Button variant="outline" className="w-full h-24 flex flex-col">
+                      <Database className="h-6 w-6 mb-2" />
+                      <span>Dados Mock</span>
                     </Button>
                   </Link>
                 </div>

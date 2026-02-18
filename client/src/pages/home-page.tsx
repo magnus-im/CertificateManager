@@ -8,52 +8,52 @@ import { Link } from "wouter";
 
 export default function HomePage() {
   const { user } = useAuth();
-  
-  const { 
+
+  const {
     data: entryCertificatesData,
-    isLoading: isLoadingEntryCertificates 
+    isLoading: isLoadingEntryCertificates
   } = useQuery({
     queryKey: ["/api/entry-certificates"],
   });
-  
-  const { 
+
+  const {
     data: issuedCertificatesData,
-    isLoading: isLoadingIssuedCertificates 
+    isLoading: isLoadingIssuedCertificates
   } = useQuery({
     queryKey: ["/api/issued-certificates"],
   });
-  
-  const { 
+
+  const {
     data: productsData,
-    isLoading: isLoadingProducts 
+    isLoading: isLoadingProducts
   } = useQuery({
     queryKey: ["/api/products"],
   });
-  
-  const { 
+
+  const {
     data: suppliersData,
-    isLoading: isLoadingSuppliers 
+    isLoading: isLoadingSuppliers
   } = useQuery({
     queryKey: ["/api/suppliers"],
   });
-  
-  const { 
+
+  const {
     data: clientsData,
-    isLoading: isLoadingClients 
+    isLoading: isLoadingClients
   } = useQuery({
     queryKey: ["/api/clients"],
   });
-  
-  const { 
+
+  const {
     data: manufacturersData,
-    isLoading: isLoadingManufacturers 
+    isLoading: isLoadingManufacturers
   } = useQuery({
     queryKey: ["/api/manufacturers"],
   });
-  
-  const isLoading = isLoadingEntryCertificates || isLoadingIssuedCertificates || 
-                    isLoadingProducts || isLoadingSuppliers || 
-                    isLoadingClients || isLoadingManufacturers;
+
+  const isLoading = isLoadingEntryCertificates || isLoadingIssuedCertificates ||
+    isLoadingProducts || isLoadingSuppliers ||
+    isLoadingClients || isLoadingManufacturers;
 
   const entryCertificates = entryCertificatesData || [] as any[];
   const issuedCertificates = issuedCertificatesData || [] as any[];
@@ -61,41 +61,41 @@ export default function HomePage() {
   const suppliers = suppliersData || [] as any[];
   const clients = clientsData || [] as any[];
   const manufacturers = manufacturersData || [] as any[];
-  
+
   // Calcular dados reais para o gráfico de atividade de boletins
   const generateChartData = () => {
     // Se os dados ainda não foram carregados, retornar um array vazio
     if (isLoading) return [];
-    
+
     // Como estamos em abril de 2025, vamos fixar este mês para testes
     // Em produção, isso deve usar a data atual
     const currentYear = 2025;
     const currentMonth = 3; // Abril (0-indexado)
-    
+
     // Criar um objeto para armazenar contagens por mês
     const monthlyCounts: { [key: string]: { entrada: number; emitidos: number } } = {};
-    
+
     // Inicializar os meses do ano atual
     const months = [
-      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
       'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
     ];
-    
+
     months.forEach(month => {
       monthlyCounts[month] = { entrada: 0, emitidos: 0 };
     });
-    
+
     // Vamos garantir que temos dados para abril
-    monthlyCounts['Abr'] = { 
-      entrada: entryCertificates.length, 
-      emitidos: issuedCertificates.length 
+    monthlyCounts['Abr'] = {
+      entrada: entryCertificates.length,
+      emitidos: issuedCertificates.length
     };
-    
+
     // Registrar para depuração
     console.log("Certificados de Entrada:", entryCertificates);
     console.log("Certificados Emitidos:", issuedCertificates);
     console.log("Contagem mensal:", monthlyCounts);
-    
+
     // Converter o objeto em um array para o gráfico
     return months.map(month => ({
       name: month,
@@ -103,7 +103,7 @@ export default function HomePage() {
       emitidos: monthlyCounts[month].emitidos
     }));
   };
-  
+
   const chartData = generateChartData();
 
   return (
@@ -112,7 +112,7 @@ export default function HomePage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-medium">Dashboard</h1>
         </div>
-        
+
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -133,7 +133,7 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-4">
@@ -147,7 +147,7 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-4">
@@ -161,7 +161,7 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-4">
@@ -171,8 +171,8 @@ export default function HomePage() {
                     <div>
                       <p className="text-sm text-gray-500">Taxa de Aprovação</p>
                       <h3 className="text-2xl font-bold">
-                        {entryCertificates.length > 0 
-                          ? Math.round((entryCertificates.filter(cert => cert.status === 'Aprovado').length / entryCertificates.length) * 100) 
+                        {entryCertificates.length > 0
+                          ? Math.round((entryCertificates.filter(cert => cert.status === 'Aprovado').length / entryCertificates.length) * 100)
                           : 0}%
                       </h3>
                     </div>
@@ -180,7 +180,7 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               <Card className="lg:col-span-2">
                 <CardHeader>
@@ -200,7 +200,7 @@ export default function HomePage() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>Cadastros</CardTitle>
@@ -219,7 +219,7 @@ export default function HomePage() {
                         </a>
                       </Link>
                     </div>
-                    
+
                     <div>
                       <Link href="/manufacturers">
                         <a className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100">
@@ -231,7 +231,7 @@ export default function HomePage() {
                         </a>
                       </Link>
                     </div>
-                    
+
                     <div>
                       <Link href="/clients">
                         <a className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100">
@@ -243,7 +243,7 @@ export default function HomePage() {
                         </a>
                       </Link>
                     </div>
-                    
+
                     <div>
                       <Link href="/products">
                         <a className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100">
@@ -259,7 +259,7 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             </div>
-            
+
             <div className="grid grid-cols-1 mb-6">
               <Card>
                 <CardHeader>
@@ -268,30 +268,30 @@ export default function HomePage() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <Link href="/certificates">
-                      <a className="bg-primary text-white p-4 rounded-lg text-center hover:bg-primary-dark">
-                        <FileCheck className="h-6 w-6 mx-auto mb-2" />
-                        <span>Novo Boletim de Entrada</span>
+                      <a className="bg-primary text-white p-4 rounded-lg text-center hover:bg-primary-dark flex flex-col items-center justify-center h-full w-full transition-transform hover:scale-105">
+                        <FileCheck className="h-8 w-8 mx-auto mb-2" />
+                        <span className="font-medium">Novo Boletim de Entrada</span>
                       </a>
                     </Link>
-                    
+
                     <Link href="/issued-certificates">
-                      <a className="bg-green-600 text-white p-4 rounded-lg text-center hover:bg-green-700">
-                        <FileOutput className="h-6 w-6 mx-auto mb-2" />
-                        <span>Emitir Boletim</span>
+                      <a className="bg-green-600 text-white p-4 rounded-lg text-center hover:bg-green-700 flex flex-col items-center justify-center h-full w-full transition-transform hover:scale-105">
+                        <FileOutput className="h-8 w-8 mx-auto mb-2" />
+                        <span className="font-medium">Emitir Boletim</span>
                       </a>
                     </Link>
-                    
+
                     <Link href="/products">
-                      <a className="bg-purple-600 text-white p-4 rounded-lg text-center hover:bg-purple-700">
-                        <Package className="h-6 w-6 mx-auto mb-2" />
-                        <span>Cadastrar Produto</span>
+                      <a className="bg-purple-600 text-white p-4 rounded-lg text-center hover:bg-purple-700 flex flex-col items-center justify-center h-full w-full transition-transform hover:scale-105">
+                        <Package className="h-8 w-8 mx-auto mb-2" />
+                        <span className="font-medium">Cadastrar Produto</span>
                       </a>
                     </Link>
-                    
+
                     <Link href="/traceability">
-                      <a className="bg-amber-600 text-white p-4 rounded-lg text-center hover:bg-amber-700">
-                        <ListChecks className="h-6 w-6 mx-auto mb-2" />
-                        <span>Consultar Rastreabilidade</span>
+                      <a className="bg-amber-600 text-white p-4 rounded-lg text-center hover:bg-amber-700 flex flex-col items-center justify-center h-full w-full transition-transform hover:scale-105">
+                        <ListChecks className="h-8 w-8 mx-auto mb-2" />
+                        <span className="font-medium">Consultar Rastreabilidade</span>
                       </a>
                     </Link>
                   </div>

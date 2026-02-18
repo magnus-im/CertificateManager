@@ -81,7 +81,7 @@ Documentação de referência: `Readme/SISTEMA_PERMISSOES.md`.
 
 O projeto está configurado para ser flexível no deploy:
 -   **Local**: `npm run dev` (Concorrência de front e back).
--   **Replit**: Otimizado para o ambiente Replit (`.replit` config).
+
 -   **Docker**: Possui `Dockerfile` para conteinerização.
 -   **Banco de Dados**: Requer PostgreSQL (local ou gerenciado como Neon/RDS).
 

@@ -1,23 +1,25 @@
-import { User, InsertUser, Tenant, InsertTenant, 
-         ProductCategory, InsertProductCategory, 
-         ProductSubcategory, InsertProductSubcategory,
-         ProductBase, InsertProductBase,
-         Product, InsertProduct, 
-         ProductFile, InsertProductFile,
-         ProductBaseFile, InsertProductBaseFile,
-         ProductCharacteristic, InsertProductCharacteristic, 
-         Supplier, InsertSupplier, Manufacturer, InsertManufacturer, 
-         Client, InsertClient, EntryCertificate, InsertEntryCertificate, 
-         EntryCertificateResult, InsertEntryCertificateResult, 
-         IssuedCertificate, InsertIssuedCertificate,
-         PackageType, InsertPackageType,
-         File, InsertFile,
-         Module, InsertModule,
-         ModuleFeature, insertModuleFeatureSchema,
-         plans, modules, moduleFeatures, planModules, files,
-         users, tenants, productCategories, productSubcategories, productBase, products,
-         productFiles, productBaseFiles, productCharacteristics, suppliers, manufacturers,
-         clients, entryCertificates, entryCertificateResults, issuedCertificates, packageTypes } from "@shared/schema";
+import {
+  User, InsertUser, Tenant, InsertTenant,
+  ProductCategory, InsertProductCategory,
+  ProductSubcategory, InsertProductSubcategory,
+  ProductBase, InsertProductBase,
+  Product, InsertProduct,
+  ProductFile, InsertProductFile,
+  ProductBaseFile, InsertProductBaseFile,
+  ProductCharacteristic, InsertProductCharacteristic,
+  Supplier, InsertSupplier, Manufacturer, InsertManufacturer,
+  Client, InsertClient, EntryCertificate, InsertEntryCertificate,
+  EntryCertificateResult, InsertEntryCertificateResult,
+  IssuedCertificate, InsertIssuedCertificate,
+  PackageType, InsertPackageType,
+  File, InsertFile,
+  Module, InsertModule,
+  ModuleFeature, insertModuleFeatureSchema,
+  plans, modules, moduleFeatures, planModules, files,
+  users, tenants, productCategories, productSubcategories, productBase, products,
+  productFiles, productBaseFiles, productCharacteristics, suppliers, manufacturers,
+  clients, entryCertificates, entryCertificateResults, issuedCertificates, packageTypes
+} from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -45,7 +47,7 @@ export interface IStorage {
   updateTenant(id: number, tenant: Partial<Tenant>): Promise<Tenant | undefined>;
   getAllTenants(): Promise<Tenant[]>;
   deleteTenant(id: number): Promise<boolean>;
-  
+
   // Planos e Módulos
   getPlan(id: number): Promise<any | undefined>;
   getPlans(): Promise<any[]>;
@@ -55,20 +57,20 @@ export interface IStorage {
   getModule(id: number): Promise<any | undefined>;
   getModules(): Promise<any[]>;
   getModulesByPlan(planId: number): Promise<any[]>;
-  
+
   // Armazenamento
   getAllFiles(): Promise<File[]>;
-  getStorageInfo(): Promise<{totalFiles: number, totalSizeMB: number}>;
+  getStorageInfo(): Promise<{ totalFiles: number, totalSizeMB: number }>;
   getStorageUsageByTenant(): Promise<any[]>;
-  cleanupUnusedFiles(tenantId: number): Promise<{filesRemoved: number, spaceSaved: number}>;
-  
+  cleanupUnusedFiles(tenantId: number): Promise<{ filesRemoved: number, spaceSaved: number }>;
+
   // Product Categories
   getProductCategory(id: number, tenantId: number): Promise<ProductCategory | undefined>;
   createProductCategory(category: InsertProductCategory): Promise<ProductCategory>;
   updateProductCategory(id: number, tenantId: number, category: Partial<ProductCategory>): Promise<ProductCategory | undefined>;
   getProductCategoriesByTenant(tenantId: number): Promise<ProductCategory[]>;
   deleteProductCategory(id: number, tenantId: number): Promise<boolean>;
-  
+
   // Product Subcategories
   getProductSubcategory(id: number, tenantId: number): Promise<ProductSubcategory | undefined>;
   createProductSubcategory(subcategory: InsertProductSubcategory): Promise<ProductSubcategory>;
@@ -76,7 +78,7 @@ export interface IStorage {
   getProductSubcategoriesByCategory(categoryId: number, tenantId: number): Promise<ProductSubcategory[]>;
   getProductSubcategoriesByTenant(tenantId: number): Promise<ProductSubcategory[]>;
   deleteProductSubcategory(id: number, tenantId: number): Promise<boolean>;
-  
+
   // Product Base
   getProductBase(id: number, tenantId: number): Promise<ProductBase | undefined>;
   createProductBase(productBase: InsertProductBase): Promise<ProductBase>;
@@ -84,7 +86,7 @@ export interface IStorage {
   getProductBasesBySubcategory(subcategoryId: number, tenantId: number): Promise<ProductBase[]>;
   getProductBasesByTenant(tenantId: number): Promise<ProductBase[]>;
   deleteProductBase(id: number, tenantId: number): Promise<boolean>;
-  
+
   // Product Variants (Products)
   getProduct(id: number, tenantId: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
@@ -92,13 +94,13 @@ export interface IStorage {
   getProductsByBase(baseProductId: number, tenantId: number): Promise<Product[]>;
   getProductsByTenant(tenantId: number): Promise<Product[]>;
   deleteProduct(id: number, tenantId: number): Promise<boolean>;
-  
+
   // Product Files (para variantes)
   getProductFile(id: number, tenantId: number): Promise<ProductFile | undefined>;
   createProductFile(file: InsertProductFile): Promise<ProductFile>;
   getProductFilesByProduct(productId: number, tenantId: number): Promise<ProductFile[]>;
   deleteProductFile(id: number, tenantId: number): Promise<boolean>;
-  
+
   // Product Base Files (para FISPQ e fichas técnicas)
   getProductBaseFile(id: number, tenantId: number): Promise<ProductBaseFile | undefined>;
   createProductBaseFile(file: InsertProductBaseFile): Promise<ProductBaseFile>;
@@ -179,7 +181,7 @@ export interface IStorage {
   getModulesByPlanCode(code: string): Promise<typeof modules.$inferSelect[]>;
   getTenantEnabledModules(tenantId: number): Promise<typeof modules.$inferSelect[]>;
   updatePlanModules(planId: number, moduleIds: number[]): Promise<boolean>;
-  
+
   // Module Features
   getModuleFeature(id: number): Promise<typeof moduleFeatures.$inferSelect | undefined>;
   getModuleFeatures(): Promise<typeof moduleFeatures.$inferSelect[]>;
@@ -188,14 +190,14 @@ export interface IStorage {
   updateModuleFeature(id: number, feature: Partial<z.infer<typeof insertModuleFeatureSchema>>): Promise<typeof moduleFeatures.$inferSelect | undefined>;
   deleteModuleFeature(id: number): Promise<boolean>;
   isFeatureAccessible(featurePath: string, tenantId: number): Promise<boolean>;
-  
+
   // Files Management
   getFile(id: number, tenantId: number): Promise<File | undefined>;
   createFile(file: InsertFile): Promise<File>;
   getFilesByTenant(tenantId: number, fileCategory?: string): Promise<File[]>;
   getFilesByEntity(entityType: string, entityId: number, tenantId: number): Promise<File[]>;
   deleteFile(id: number, tenantId: number): Promise<boolean>;
-  
+
   // Session Store
   sessionStore: session.Store;
 }
@@ -203,7 +205,7 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private tenants: Map<number, Tenant>;
-  
+
   // Hierarquia de produtos
   private productCategories: Map<number, ProductCategory>;
   private productSubcategories: Map<number, ProductSubcategory>;
@@ -211,7 +213,7 @@ export class MemStorage implements IStorage {
   private products: Map<number, Product>;
   private productFiles: Map<number, ProductFile>;
   private productBaseFiles: Map<number, ProductBaseFile>;
-  
+
   private productCharacteristics: Map<number, ProductCharacteristic>;
   private suppliers: Map<number, Supplier>;
   private manufacturers: Map<number, Manufacturer>;
@@ -220,10 +222,10 @@ export class MemStorage implements IStorage {
   private entryCertificateResults: Map<number, EntryCertificateResult>;
   private issuedCertificates: Map<number, IssuedCertificate>;
   private packageTypes: Map<number, PackageType>;
-  
+
   // Arquivos gerais
   private files: Map<number, File>;
-  
+
   private userIdCounter: number;
   private tenantIdCounter: number;
   private categoryIdCounter: number;
@@ -241,13 +243,13 @@ export class MemStorage implements IStorage {
   private issuedCertificateIdCounter: number;
   private packageTypeIdCounter: number;
   private fileIdCounter: number;
-  
+
   sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
     this.tenants = new Map();
-    
+
     // Inicialização das novas estruturas hierárquicas
     this.productCategories = new Map();
     this.productSubcategories = new Map();
@@ -255,7 +257,7 @@ export class MemStorage implements IStorage {
     this.products = new Map();
     this.productFiles = new Map();
     this.productBaseFiles = new Map();
-    
+
     this.productCharacteristics = new Map();
     this.suppliers = new Map();
     this.manufacturers = new Map();
@@ -264,10 +266,10 @@ export class MemStorage implements IStorage {
     this.entryCertificateResults = new Map();
     this.issuedCertificates = new Map();
     this.packageTypes = new Map();
-    
+
     // Inicialização da estrutura de arquivos gerais
     this.files = new Map();
-    
+
     this.userIdCounter = 1;
     this.tenantIdCounter = 1;
     this.categoryIdCounter = 1;
@@ -285,11 +287,11 @@ export class MemStorage implements IStorage {
     this.issuedCertificateIdCounter = 1;
     this.packageTypeIdCounter = 1;
     this.fileIdCounter = 1;
-    
+
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
     });
-    
+
     // Create a default tenant and admin user
     this.createTenant({
       name: "Admin",
@@ -324,11 +326,11 @@ export class MemStorage implements IStorage {
 
   async createUser(user: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
-    const newUser: User = { 
-      ...user, 
-      id, 
-      role: user.role ?? 'user', 
-      active: user.active ?? true 
+    const newUser: User = {
+      ...user,
+      id,
+      role: user.role ?? 'user',
+      active: user.active ?? true
     };
     this.users.set(id, newUser);
     return newUser;
@@ -337,7 +339,7 @@ export class MemStorage implements IStorage {
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
     const user = this.users.get(id);
     if (!user) return undefined;
-    
+
     const updatedUser = { ...user, ...userData };
     this.users.set(id, updatedUser);
     return updatedUser;
@@ -366,15 +368,18 @@ export class MemStorage implements IStorage {
 
   async createTenant(tenant: InsertTenant): Promise<Tenant> {
     const id = this.tenantIdCounter++;
-    const newTenant: Tenant = { 
-      ...tenant, 
+    const newTenant: Tenant = {
+      ...tenant,
       id,
       active: tenant.active ?? true,
       logoUrl: tenant.logoUrl ?? null,
       planId: tenant.planId ?? 1, // Plano básico por padrão
       storageUsed: tenant.storageUsed ?? 0,
       planStartDate: tenant.planStartDate ?? null,
-      planEndDate: tenant.planEndDate ?? null
+      planEndDate: tenant.planEndDate ?? null,
+      lastPaymentDate: tenant.lastPaymentDate ?? null,
+      nextPaymentDate: tenant.nextPaymentDate ?? null,
+      paymentStatus: tenant.paymentStatus ?? "active"
     };
     this.tenants.set(id, newTenant);
     return newTenant;
@@ -383,7 +388,7 @@ export class MemStorage implements IStorage {
   async updateTenant(id: number, tenantData: Partial<Tenant>): Promise<Tenant | undefined> {
     const tenant = this.tenants.get(id);
     if (!tenant) return undefined;
-    
+
     const updatedTenant = { ...tenant, ...tenantData };
     this.tenants.set(id, updatedTenant);
     return updatedTenant;
@@ -404,8 +409,8 @@ export class MemStorage implements IStorage {
 
   async createProductCategory(category: InsertProductCategory): Promise<ProductCategory> {
     const id = this.categoryIdCounter++;
-    const newCategory: ProductCategory = { 
-      ...category, 
+    const newCategory: ProductCategory = {
+      ...category,
       id,
       active: category.active ?? true,
       description: category.description ?? null
@@ -417,7 +422,7 @@ export class MemStorage implements IStorage {
   async updateProductCategory(id: number, tenantId: number, categoryData: Partial<ProductCategory>): Promise<ProductCategory | undefined> {
     const category = await this.getProductCategory(id, tenantId);
     if (!category) return undefined;
-    
+
     const updatedCategory = { ...category, ...categoryData };
     this.productCategories.set(id, updatedCategory);
     return updatedCategory;
@@ -446,8 +451,8 @@ export class MemStorage implements IStorage {
 
   async createProductSubcategory(subcategory: InsertProductSubcategory): Promise<ProductSubcategory> {
     const id = this.subcategoryIdCounter++;
-    const newSubcategory: ProductSubcategory = { 
-      ...subcategory, 
+    const newSubcategory: ProductSubcategory = {
+      ...subcategory,
       id,
       active: subcategory.active ?? true,
       description: subcategory.description ?? null
@@ -459,7 +464,7 @@ export class MemStorage implements IStorage {
   async updateProductSubcategory(id: number, tenantId: number, subcategoryData: Partial<ProductSubcategory>): Promise<ProductSubcategory | undefined> {
     const subcategory = await this.getProductSubcategory(id, tenantId);
     if (!subcategory) return undefined;
-    
+
     const updatedSubcategory = { ...subcategory, ...subcategoryData };
     this.productSubcategories.set(id, updatedSubcategory);
     return updatedSubcategory;
@@ -494,8 +499,8 @@ export class MemStorage implements IStorage {
 
   async createProductBase(productBase: InsertProductBase): Promise<ProductBase> {
     const id = this.productBaseIdCounter++;
-    const newProductBase: ProductBase = { 
-      ...productBase, 
+    const newProductBase: ProductBase = {
+      ...productBase,
       id,
       active: productBase.active ?? true,
       description: productBase.description ?? null,
@@ -513,7 +518,7 @@ export class MemStorage implements IStorage {
   async updateProductBase(id: number, tenantId: number, productBaseData: Partial<ProductBase>): Promise<ProductBase | undefined> {
     const productBase = await this.getProductBase(id, tenantId);
     if (!productBase) return undefined;
-    
+
     const updatedProductBase = { ...productBase, ...productBaseData };
     this.productBases.set(id, updatedProductBase);
     return updatedProductBase;
@@ -548,8 +553,8 @@ export class MemStorage implements IStorage {
 
   async createProductFile(file: InsertProductFile): Promise<ProductFile> {
     const id = this.productFileIdCounter++;
-    const newFile: ProductFile = { 
-      ...file, 
+    const newFile: ProductFile = {
+      ...file,
       id,
       description: file.description ?? null,
       uploadedAt: new Date()
@@ -569,7 +574,7 @@ export class MemStorage implements IStorage {
     if (!file) return false;
     return this.productFiles.delete(id);
   }
-  
+
   // Product Base File methods
   async getProductBaseFile(id: number, tenantId: number): Promise<ProductBaseFile | undefined> {
     const file = this.productBaseFiles.get(id);
@@ -581,8 +586,8 @@ export class MemStorage implements IStorage {
 
   async createProductBaseFile(file: InsertProductBaseFile): Promise<ProductBaseFile> {
     const id = this.productBaseFileIdCounter++;
-    const newFile: ProductBaseFile = { 
-      ...file, 
+    const newFile: ProductBaseFile = {
+      ...file,
       id,
       description: file.description ?? null,
       uploadedAt: new Date()
@@ -596,7 +601,7 @@ export class MemStorage implements IStorage {
       (file) => file.baseProductId === baseProductId && file.tenantId === tenantId
     );
   }
-  
+
   async getProductBaseFilesByCategory(baseProductId: number, category: string, tenantId: number): Promise<ProductBaseFile[]> {
     return Array.from(this.productBaseFiles.values()).filter(
       (file) => file.baseProductId === baseProductId && file.fileCategory === category && file.tenantId === tenantId
@@ -620,8 +625,8 @@ export class MemStorage implements IStorage {
 
   async createProduct(product: InsertProduct): Promise<Product> {
     const id = this.productIdCounter++;
-    const newProduct: Product = { 
-      ...product, 
+    const newProduct: Product = {
+      ...product,
       id,
       active: product.active ?? true,
       commercialName: product.commercialName ?? null,
@@ -639,7 +644,7 @@ export class MemStorage implements IStorage {
   async updateProduct(id: number, tenantId: number, productData: Partial<Product>): Promise<Product | undefined> {
     const product = await this.getProduct(id, tenantId);
     if (!product) return undefined;
-    
+
     const updatedProduct = { ...product, ...productData };
     this.products.set(id, updatedProduct);
     return updatedProduct;
@@ -650,7 +655,7 @@ export class MemStorage implements IStorage {
       (product) => product.tenantId === tenantId
     );
   }
-  
+
   async getProductsByBase(baseProductId: number, tenantId: number): Promise<Product[]> {
     return Array.from(this.products.values()).filter(
       (product) => product.baseProductId === baseProductId && product.tenantId === tenantId
@@ -674,8 +679,8 @@ export class MemStorage implements IStorage {
 
   async createProductCharacteristic(characteristic: InsertProductCharacteristic): Promise<ProductCharacteristic> {
     const id = this.characteristicIdCounter++;
-    const newCharacteristic: ProductCharacteristic = { 
-      ...characteristic, 
+    const newCharacteristic: ProductCharacteristic = {
+      ...characteristic,
       id,
       minValue: characteristic.minValue ? String(characteristic.minValue) : null,
       maxValue: characteristic.maxValue ? String(characteristic.maxValue) : null,
@@ -688,7 +693,7 @@ export class MemStorage implements IStorage {
   async updateProductCharacteristic(id: number, tenantId: number, characteristicData: Partial<ProductCharacteristic>): Promise<ProductCharacteristic | undefined> {
     const characteristic = await this.getProductCharacteristic(id, tenantId);
     if (!characteristic) return undefined;
-    
+
     const updatedCharacteristic = { ...characteristic, ...characteristicData };
     this.productCharacteristics.set(id, updatedCharacteristic);
     return updatedCharacteristic;
@@ -717,8 +722,8 @@ export class MemStorage implements IStorage {
 
   async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
     const id = this.supplierIdCounter++;
-    const newSupplier: Supplier = { 
-      ...supplier, 
+    const newSupplier: Supplier = {
+      ...supplier,
       id,
       address: supplier.address ?? null,
       internalCode: supplier.internalCode ?? null,
@@ -731,7 +736,7 @@ export class MemStorage implements IStorage {
   async updateSupplier(id: number, tenantId: number, supplierData: Partial<Supplier>): Promise<Supplier | undefined> {
     const supplier = await this.getSupplier(id, tenantId);
     if (!supplier) return undefined;
-    
+
     const updatedSupplier = { ...supplier, ...supplierData };
     this.suppliers.set(id, updatedSupplier);
     return updatedSupplier;
@@ -768,7 +773,7 @@ export class MemStorage implements IStorage {
   async updateManufacturer(id: number, tenantId: number, manufacturerData: Partial<Manufacturer>): Promise<Manufacturer | undefined> {
     const manufacturer = await this.getManufacturer(id, tenantId);
     if (!manufacturer) return undefined;
-    
+
     const updatedManufacturer = { ...manufacturer, ...manufacturerData };
     this.manufacturers.set(id, updatedManufacturer);
     return updatedManufacturer;
@@ -797,8 +802,8 @@ export class MemStorage implements IStorage {
 
   async createClient(client: InsertClient): Promise<Client> {
     const id = this.clientIdCounter++;
-    const newClient: Client = { 
-      ...client, 
+    const newClient: Client = {
+      ...client,
       id,
       address: client.address ?? null,
       internalCode: client.internalCode ?? null,
@@ -811,7 +816,7 @@ export class MemStorage implements IStorage {
   async updateClient(id: number, tenantId: number, clientData: Partial<Client>): Promise<Client | undefined> {
     const client = await this.getClient(id, tenantId);
     if (!client) return undefined;
-    
+
     const updatedClient = { ...client, ...clientData };
     this.clients.set(id, updatedClient);
     return updatedClient;
@@ -840,13 +845,13 @@ export class MemStorage implements IStorage {
 
   async createEntryCertificate(certificate: InsertEntryCertificate): Promise<EntryCertificate> {
     const id = this.entryCertificateIdCounter++;
-    const newCertificate: EntryCertificate = { 
-      ...certificate, 
-      id, 
+    const newCertificate: EntryCertificate = {
+      ...certificate,
+      id,
       enteredAt: new Date(),
       originalFileUrl: certificate.originalFileUrl ?? null,
       conversionFactor: certificate.conversionFactor ? String(certificate.conversionFactor) : null,
-      receivedQuantity: typeof certificate.receivedQuantity === 'number' ? 
+      receivedQuantity: typeof certificate.receivedQuantity === 'number' ?
         String(certificate.receivedQuantity) : certificate.receivedQuantity
     };
     this.entryCertificates.set(id, newCertificate);
@@ -856,7 +861,7 @@ export class MemStorage implements IStorage {
   async updateEntryCertificate(id: number, tenantId: number, certificateData: Partial<EntryCertificate>): Promise<EntryCertificate | undefined> {
     const certificate = await this.getEntryCertificate(id, tenantId);
     if (!certificate) return undefined;
-    
+
     const updatedCertificate = { ...certificate, ...certificateData };
     this.entryCertificates.set(id, updatedCertificate);
     return updatedCertificate;
@@ -866,7 +871,7 @@ export class MemStorage implements IStorage {
     let certificates = Array.from(this.entryCertificates.values()).filter(
       (cert) => cert.tenantId === tenantId
     );
-    
+
     // Apply filters if any
     if (filters.productId) {
       certificates = certificates.filter(cert => cert.productId === Number(filters.productId));
@@ -891,7 +896,7 @@ export class MemStorage implements IStorage {
       const endDate = new Date(filters.endDate);
       certificates = certificates.filter(cert => new Date(cert.entryDate) <= endDate);
     }
-    
+
     return certificates;
   }
 
@@ -912,8 +917,8 @@ export class MemStorage implements IStorage {
 
   async createEntryCertificateResult(result: InsertEntryCertificateResult): Promise<EntryCertificateResult> {
     const id = this.resultIdCounter++;
-    const newResult: EntryCertificateResult = { 
-      ...result, 
+    const newResult: EntryCertificateResult = {
+      ...result,
       id,
       minValue: result.minValue ? String(result.minValue) : null,
       maxValue: result.maxValue ? String(result.maxValue) : null,
@@ -927,7 +932,7 @@ export class MemStorage implements IStorage {
   async updateEntryCertificateResult(id: number, tenantId: number, resultData: Partial<EntryCertificateResult>): Promise<EntryCertificateResult | undefined> {
     const result = await this.getEntryCertificateResult(id, tenantId);
     if (!result) return undefined;
-    
+
     const updatedResult = { ...result, ...resultData };
     this.entryCertificateResults.set(id, updatedResult);
     return updatedResult;
@@ -956,8 +961,8 @@ export class MemStorage implements IStorage {
 
   async createIssuedCertificate(certificate: InsertIssuedCertificate): Promise<IssuedCertificate> {
     const id = this.issuedCertificateIdCounter++;
-    const newCertificate: IssuedCertificate = { 
-      ...certificate, 
+    const newCertificate: IssuedCertificate = {
+      ...certificate,
       id,
       soldQuantity: typeof certificate.soldQuantity === 'number' ? String(certificate.soldQuantity) : certificate.soldQuantity
     };
@@ -969,7 +974,7 @@ export class MemStorage implements IStorage {
     let certificates = Array.from(this.issuedCertificates.values()).filter(
       (cert) => cert.tenantId === tenantId
     );
-    
+
     // Apply filters if any
     if (filters.clientId) {
       certificates = certificates.filter(cert => cert.clientId === Number(filters.clientId));
@@ -991,16 +996,16 @@ export class MemStorage implements IStorage {
       const endDate = new Date(filters.endDate);
       certificates = certificates.filter(cert => new Date(cert.issueDate) <= endDate);
     }
-    
+
     return certificates;
   }
-  
+
   async getIssuedCertificatesByEntryCertificate(entryCertificateId: number, tenantId: number): Promise<IssuedCertificate[]> {
     return Array.from(this.issuedCertificates.values()).filter(
       (cert) => cert.entryCertificateId === entryCertificateId && cert.tenantId === tenantId
     );
   }
-  
+
   async deleteIssuedCertificate(id: number, tenantId: number): Promise<boolean> {
     const certificate = await this.getIssuedCertificate(id, tenantId);
     if (!certificate) return false;
@@ -1018,10 +1023,10 @@ export class MemStorage implements IStorage {
 
   async createPackageType(packageType: InsertPackageType): Promise<PackageType> {
     const id = this.packageTypeIdCounter++;
-    const newPackageType: PackageType = { 
-      ...packageType, 
+    const newPackageType: PackageType = {
+      ...packageType,
       id,
-      active: packageType.active ?? true 
+      active: packageType.active ?? true
     };
     this.packageTypes.set(id, newPackageType);
     return newPackageType;
@@ -1030,7 +1035,7 @@ export class MemStorage implements IStorage {
   async updatePackageType(id: number, tenantId: number, packageTypeData: Partial<PackageType>): Promise<PackageType | undefined> {
     const packageType = await this.getPackageType(id, tenantId);
     if (!packageType) return undefined;
-    
+
     const updatedPackageType = { ...packageType, ...packageTypeData };
     this.packageTypes.set(id, updatedPackageType);
     return updatedPackageType;
@@ -1047,7 +1052,7 @@ export class MemStorage implements IStorage {
     if (!packageType) return false;
     return this.packageTypes.delete(id);
   }
-  
+
   // Files Management methods
   async getFile(id: number, tenantId: number): Promise<File | undefined> {
     const file = this.files.get(id);
@@ -1059,8 +1064,8 @@ export class MemStorage implements IStorage {
 
   async createFile(file: InsertFile): Promise<File> {
     const id = this.fileIdCounter++;
-    const newFile: File = { 
-      ...file, 
+    const newFile: File = {
+      ...file,
       id,
       description: file.description ?? null,
       entityType: file.entityType ?? null,
@@ -1068,19 +1073,19 @@ export class MemStorage implements IStorage {
       uploadedAt: new Date()
     };
     this.files.set(id, newFile);
-    
+
     // Atualiza o contador de armazenamento usado pelo tenant
     const tenant = await this.getTenant(file.tenantId);
     if (tenant) {
-      const fileSizeMB = typeof file.fileSizeMB === 'string' 
-        ? parseFloat(file.fileSizeMB) 
+      const fileSizeMB = typeof file.fileSizeMB === 'string'
+        ? parseFloat(file.fileSizeMB)
         : file.fileSizeMB;
-      
+
       await this.updateTenant(tenant.id, {
         storageUsed: tenant.storageUsed + fileSizeMB
       });
     }
-    
+
     return newFile;
   }
 
@@ -1097,28 +1102,28 @@ export class MemStorage implements IStorage {
 
   async getFilesByEntity(entityType: string, entityId: number, tenantId: number): Promise<File[]> {
     return Array.from(this.files.values()).filter(
-      (file) => file.entityType === entityType && 
-                file.entityId === entityId && 
-                file.tenantId === tenantId
+      (file) => file.entityType === entityType &&
+        file.entityId === entityId &&
+        file.tenantId === tenantId
     );
   }
 
   async deleteFile(id: number, tenantId: number): Promise<boolean> {
     const file = await this.getFile(id, tenantId);
     if (!file) return false;
-    
+
     // Atualiza o contador de armazenamento usado pelo tenant
     const tenant = await this.getTenant(file.tenantId);
     if (tenant) {
-      const fileSizeMB = typeof file.fileSizeMB === 'string' 
-        ? parseFloat(file.fileSizeMB) 
+      const fileSizeMB = typeof file.fileSizeMB === 'string'
+        ? parseFloat(file.fileSizeMB)
         : file.fileSizeMB;
-      
+
       await this.updateTenant(tenant.id, {
         storageUsed: Math.max(0, tenant.storageUsed - fileSizeMB)
       });
     }
-    
+
     return this.files.delete(id);
   }
 
@@ -1245,11 +1250,11 @@ export class MemStorage implements IStorage {
     // Todos os tenants no MemStorage usam o plano básico por padrão
     return this.getModulesByPlan(1);
   }
-  
+
   async getModules(): Promise<any[]> {
     return this.getAllModules();
   }
-  
+
   async createModule(module: InsertModule): Promise<typeof modules.$inferSelect> {
     return {
       id: 2,
@@ -1261,7 +1266,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
   }
-  
+
   async updateModule(id: number, module: Partial<InsertModule>): Promise<typeof modules.$inferSelect | undefined> {
     if (id === 1) {
       return {
@@ -1276,15 +1281,15 @@ export class MemStorage implements IStorage {
     }
     return undefined;
   }
-  
+
   async deleteModule(id: number): Promise<boolean> {
     return id !== 1; // Não permitir excluir o módulo core
   }
-  
+
   async updatePlanModules(planId: number, moduleIds: number[]): Promise<boolean> {
     return true; // Simulação sempre bem-sucedida
   }
-  
+
   // Implementação de ModuleFeatures para MemStorage
   async getModuleFeature(id: number): Promise<typeof moduleFeatures.$inferSelect | undefined> {
     return {
@@ -1296,7 +1301,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
   }
-  
+
   async getModuleFeatures(): Promise<typeof moduleFeatures.$inferSelect[]> {
     return [
       {
@@ -1309,11 +1314,11 @@ export class MemStorage implements IStorage {
       }
     ];
   }
-  
+
   async getModuleFeaturesByModule(moduleId: number): Promise<typeof moduleFeatures.$inferSelect[]> {
     return this.getModuleFeatures();
   }
-  
+
   async createModuleFeature(feature: z.infer<typeof insertModuleFeatureSchema>): Promise<typeof moduleFeatures.$inferSelect> {
     return {
       id: 2,
@@ -1324,7 +1329,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
   }
-  
+
   async updateModuleFeature(id: number, feature: Partial<z.infer<typeof insertModuleFeatureSchema>>): Promise<typeof moduleFeatures.$inferSelect | undefined> {
     return {
       id,
@@ -1335,29 +1340,29 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
   }
-  
+
   async deleteModuleFeature(id: number): Promise<boolean> {
     return true;
   }
-  
+
   async isFeatureAccessible(featurePath: string, tenantId: number): Promise<boolean> {
     // Obter o tenant
     const tenant = this.tenants.get(tenantId);
     if (!tenant) {
       return false;
     }
-    
+
     // Obter os módulos do plano do tenant
     const modules = await this.getModulesByPlan(tenant.planId);
     if (!modules || modules.length === 0) {
       return false;
     }
-    
+
     // Na implementação em memória, simplesmente verificamos se o módulo existe
     // Em uma implementação real, verificaríamos se o módulo tem a feature específica
     return modules.length > 0;
   }
-  
+
   // Implementação dos métodos administrativos
   async deleteTenant(id: number): Promise<boolean> {
     // Antes de remover o tenant, devemos remover todos os seus usuários
@@ -1365,13 +1370,13 @@ export class MemStorage implements IStorage {
     for (const user of tenantUsers) {
       await this.deleteUser(user.id);
     }
-    
+
     // Remover todas as entidades associadas ao tenant
     // (Em uma implementação real, seria necessário remover todas as entidades)
-    
+
     return this.tenants.delete(id);
   }
-  
+
   async getPlans(): Promise<any[]> {
     return [
       {
@@ -1415,7 +1420,7 @@ export class MemStorage implements IStorage {
       }
     ];
   }
-  
+
   async createPlan(plan: any): Promise<any> {
     // Em uma implementação real, seria adicionado ao banco de dados
     return {
@@ -1427,16 +1432,16 @@ export class MemStorage implements IStorage {
       maxStorage: plan.storageLimit || 0
     };
   }
-  
+
   async updatePlan(id: number, plan: Partial<any>): Promise<any | undefined> {
     // Em uma implementação de memória, retornamos o plano atualizado
     const plans = await this.getPlans();
     const existingPlan = plans.find(p => p.id === id);
-    
+
     if (!existingPlan) {
       return undefined;
     }
-    
+
     return {
       ...existingPlan,
       ...plan,
@@ -1444,13 +1449,13 @@ export class MemStorage implements IStorage {
       maxStorage: plan.storageLimit || existingPlan.maxStorage
     };
   }
-  
+
   async deletePlan(id: number): Promise<boolean> {
     // Em uma implementação de memória, retornamos true (sucesso)
     // Não podemos realmente excluir de uma array constante
     return true;
   }
-  
+
   async getModules(): Promise<any[]> {
     return [
       {
@@ -1482,53 +1487,53 @@ export class MemStorage implements IStorage {
       }
     ];
   }
-  
+
   async getAllFiles(): Promise<File[]> {
     return Array.from(this.files.values());
   }
-  
-  async getStorageInfo(): Promise<{totalFiles: number, totalSizeMB: number}> {
+
+  async getStorageInfo(): Promise<{ totalFiles: number, totalSizeMB: number }> {
     const files = Array.from(this.files.values());
     const totalSizeMB = files.reduce((acc, file) => acc + (parseFloat(file.fileSizeMB) || 0), 0);
-    
+
     return {
       totalFiles: files.length,
       totalSizeMB
     };
   }
-  
+
   async getStorageUsageByTenant(): Promise<any[]> {
     const files = Array.from(this.files.values());
     const tenants = await this.getAllTenants();
     const result = [];
-    
+
     for (const tenant of tenants) {
       const tenantFiles = files.filter(f => f.tenantId === tenant.id);
       const storageUsed = tenantFiles.reduce((acc, file) => acc + (parseFloat(file.fileSizeMB) || 0), 0);
-      const plan = tenant.planId === 1 ? { maxStorage: 2 } : 
-                  tenant.planId === 2 ? { maxStorage: 5 } : 
-                  tenant.planId === 3 ? { maxStorage: 10 } : { maxStorage: 0 };
-      
+      const plan = tenant.planId === 1 ? { maxStorage: 2 } :
+        tenant.planId === 2 ? { maxStorage: 5 } :
+          tenant.planId === 3 ? { maxStorage: 10 } : { maxStorage: 0 };
+
       result.push({
         id: tenant.id,
         name: tenant.name,
         storageUsed,
         fileCount: tenantFiles.length,
         maxStorage: plan.maxStorage,
-        planName: tenant.planId === 1 ? 'Básico' : 
-                 tenant.planId === 2 ? 'Intermediário' : 
-                 tenant.planId === 3 ? 'Completo' : 'Desconhecido'
+        planName: tenant.planId === 1 ? 'Básico' :
+          tenant.planId === 2 ? 'Intermediário' :
+            tenant.planId === 3 ? 'Completo' : 'Desconhecido'
       });
     }
-    
+
     return result;
   }
-  
-  async cleanupUnusedFiles(tenantId: number): Promise<{filesRemoved: number, spaceSaved: number}> {
+
+  async cleanupUnusedFiles(tenantId: number): Promise<{ filesRemoved: number, spaceSaved: number }> {
     const files = Array.from(this.files.values()).filter(f => f.tenantId === tenantId && !f.entityId);
     let filesRemoved = 0;
     let spaceSaved = 0;
-    
+
     for (const file of files) {
       const success = await this.deleteFile(file.id, tenantId);
       if (success) {
@@ -1536,7 +1541,7 @@ export class MemStorage implements IStorage {
         spaceSaved += parseFloat(file.fileSizeMB) || 0;
       }
     }
-    
+
     return { filesRemoved, spaceSaved };
   }
 }
@@ -2185,7 +2190,7 @@ export class DatabaseStorage implements IStorage {
         eq(issuedCertificates.tenantId, tenantId)
       ));
   }
-  
+
   async deleteIssuedCertificate(id: number, tenantId: number): Promise<boolean> {
     const result = await db.delete(issuedCertificates)
       .where(and(
@@ -2254,19 +2259,19 @@ export class DatabaseStorage implements IStorage {
       entityId: file.entityId ?? null,
       uploadedAt: new Date()
     }).returning();
-    
+
     // Atualizar o contador de armazenamento usado pelo tenant
     const tenant = await this.getTenant(file.tenantId);
     if (tenant) {
-      const fileSizeMB = typeof file.fileSizeMB === 'string' 
-        ? parseFloat(file.fileSizeMB) 
+      const fileSizeMB = typeof file.fileSizeMB === 'string'
+        ? parseFloat(file.fileSizeMB)
         : file.fileSizeMB;
-      
+
       await this.updateTenant(tenant.id, {
         storageUsed: tenant.storageUsed + fileSizeMB
       });
     }
-    
+
     return newFile;
   }
 
@@ -2295,29 +2300,29 @@ export class DatabaseStorage implements IStorage {
     // Recuperar o arquivo para obter o tamanho
     const file = await this.getFile(id, tenantId);
     if (!file) return false;
-    
+
     // Atualizar o contador de armazenamento usado pelo tenant
     const tenant = await this.getTenant(file.tenantId);
     if (tenant) {
-      const fileSizeMB = typeof file.fileSizeMB === 'string' 
-        ? parseFloat(file.fileSizeMB) 
+      const fileSizeMB = typeof file.fileSizeMB === 'string'
+        ? parseFloat(file.fileSizeMB)
         : file.fileSizeMB;
-      
+
       await this.updateTenant(tenant.id, {
         storageUsed: Math.max(0, tenant.storageUsed - fileSizeMB)
       });
     }
-    
+
     // Remover o arquivo do banco
     const result = await db.delete(files)
       .where(and(
         eq(files.id, id),
         eq(files.tenantId, tenantId)
       ));
-    
+
     return result.rowCount > 0;
   }
-  
+
   // Plans & Modules methods
   async getAllPlans(): Promise<typeof plans.$inferSelect[]> {
     return await db.select().from(plans).where(eq(plans.active, true));
@@ -2390,68 +2395,68 @@ export class DatabaseStorage implements IStorage {
     // Buscar todos os módulos disponíveis para o plano do tenant
     return await this.getModulesByPlan(tenant.planId);
   }
-  
+
   // Implementação dos métodos administrativos
   async deleteTenant(id: number): Promise<boolean> {
     try {
       console.log(`Iniciando exclusão do tenant ID: ${id}`);
-      
+
       // 1. Remover todos os usuários associados
       await db.delete(users).where(eq(users.tenantId, id));
-      
+
       // 2. Remover certificados emitidos e seus resultados
       await db.delete(issuedCertificates).where(eq(issuedCertificates.tenantId, id));
-      
+
       // 3. Remover resultados de certificados de entrada
       await db.delete(entryCertificateResults).where(eq(entryCertificateResults.tenantId, id));
-      
+
       // 4. Remover certificados de entrada
       await db.delete(entryCertificates).where(eq(entryCertificates.tenantId, id));
-      
+
       // 5. Remover características de produtos
       await db.delete(productCharacteristics).where(eq(productCharacteristics.tenantId, id));
-      
+
       // 6. Remover produtos variantes
       await db.delete(products).where(eq(products.tenantId, id));
-      
+
       // 7. Remover arquivos de produtos base
       await db.delete(productBaseFiles).where(eq(productBaseFiles.tenantId, id));
-      
+
       // 8. Remover arquivos de produtos variantes
       await db.delete(productFiles).where(eq(productFiles.tenantId, id));
-      
+
       // 9. Remover subcategorias de produtos
       await db.delete(productSubcategories).where(eq(productSubcategories.tenantId, id));
-      
+
       // 10. Remover categorias de produtos
       await db.delete(productCategories).where(eq(productCategories.tenantId, id));
-      
+
       // 11. Remover produtos base
       await db.delete(productBase).where(eq(productBase.tenantId, id));
-      
+
       // 12. Remover fornecedores
       await db.delete(suppliers).where(eq(suppliers.tenantId, id));
-      
+
       // 13. Remover fabricantes
       await db.delete(manufacturers).where(eq(manufacturers.tenantId, id));
-      
+
       // 14. Remover clientes
       await db.delete(clients).where(eq(clients.tenantId, id));
-      
+
       // 15. Remover arquivos gerais
       await db.delete(files).where(eq(files.tenantId, id));
-      
+
       // 16. Finalmente, remover o tenant
       console.log(`Removendo o tenant ID: ${id}`);
       const result = await db.delete(tenants).where(eq(tenants.id, id));
-      
+
       return result.rowCount > 0;
     } catch (error) {
       console.error(`Erro ao excluir tenant ${id}:`, error);
       throw error;
     }
   }
-  
+
   async getPlans(): Promise<any[]> {
     return await db.select({
       id: plans.id,
@@ -2467,13 +2472,13 @@ export class DatabaseStorage implements IStorage {
       maxStorage: plans.storageLimit // Mapeamento para manter compatibilidade
     }).from(plans);
   }
-  
+
   async createPlan(plan: any): Promise<any> {
     // Garantir que a descrição não seja nula
     if (!plan.description) {
       throw new Error('A descrição do plano é obrigatória');
     }
-    
+
     const [newPlan] = await db.insert(plans).values({
       name: plan.name,
       code: plan.code || 'CUSTOM',
@@ -2485,19 +2490,19 @@ export class DatabaseStorage implements IStorage {
       createdAt: new Date(),
       updatedAt: new Date()
     }).returning();
-    
+
     return {
       ...newPlan,
       maxStorage: newPlan.storageLimit
     };
   }
-  
+
   async updatePlan(id: number, plan: Partial<any>): Promise<any | undefined> {
     // Se a descrição estiver definida, garantir que não seja vazia
     if (plan.description !== undefined && (!plan.description || plan.description.trim() === '')) {
       throw new Error('A descrição do plano é obrigatória');
     }
-    
+
     const [updatedPlan] = await db.update(plans)
       .set({
         ...plan,
@@ -2507,36 +2512,36 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(plans.id, id))
       .returning();
-      
+
     if (!updatedPlan) return undefined;
-    
+
     return {
       ...updatedPlan,
       maxStorage: updatedPlan.storageLimit
     };
   }
-  
+
   async deletePlan(id: number): Promise<boolean> {
     try {
       // Primeiro removemos todas as associações com módulos
       await db.delete(planModules)
         .where(eq(planModules.planId, id));
-      
+
       // Depois excluímos o plano
       const result = await db.delete(plans)
         .where(eq(plans.id, id));
-      
+
       return result.rowCount > 0;
     } catch (error) {
       console.error("Error deleting plan:", error);
       throw error;
     }
   }
-  
+
   async getModules(): Promise<any[]> {
     return await db.select().from(modules);
   }
-  
+
   async createModule(module: InsertModule): Promise<typeof modules.$inferSelect> {
     const [newModule] = await db.insert(modules)
       .values({
@@ -2545,7 +2550,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newModule;
   }
-  
+
   async updateModule(id: number, module: Partial<InsertModule>): Promise<typeof modules.$inferSelect | undefined> {
     const [updatedModule] = await db.update(modules)
       .set({
@@ -2553,33 +2558,33 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(modules.id, id))
       .returning();
-    
+
     return updatedModule;
   }
-  
+
   async deleteModule(id: number): Promise<boolean> {
     try {
       // Primeiro deletamos as referências em plan_modules
       await db.delete(planModules)
         .where(eq(planModules.moduleId, id));
-      
+
       // Depois deletamos o módulo
       const result = await db.delete(modules)
         .where(eq(modules.id, id));
-      
+
       return result.rowCount > 0;
     } catch (error) {
       console.error("Error deleting module:", error);
       throw error;
     }
   }
-  
+
   async updatePlanModules(planId: number, moduleIds: number[]): Promise<boolean> {
     try {
       // Primeiro removemos todos os módulos associados ao plano
       await db.delete(planModules)
         .where(eq(planModules.planId, planId));
-      
+
       // Depois adicionamos os novos módulos
       if (moduleIds.length > 0) {
         await db.insert(planModules)
@@ -2590,28 +2595,28 @@ export class DatabaseStorage implements IStorage {
             }))
           );
       }
-      
+
       return true;
     } catch (error) {
       console.error("Error updating plan modules:", error);
       throw error;
     }
   }
-  
+
   // Module Features methods
   async getModuleFeature(id: number): Promise<typeof moduleFeatures.$inferSelect | undefined> {
     try {
       const [feature] = await db.select()
         .from(moduleFeatures)
         .where(eq(moduleFeatures.id, id));
-      
+
       return feature;
     } catch (error) {
       console.error("Error getting module feature:", error);
       throw error;
     }
   }
-  
+
   async getModuleFeatures(): Promise<typeof moduleFeatures.$inferSelect[]> {
     try {
       return await db.select().from(moduleFeatures);
@@ -2620,7 +2625,7 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
+
   async getModuleFeaturesByModule(moduleId: number): Promise<typeof moduleFeatures.$inferSelect[]> {
     try {
       return await db.select()
@@ -2631,7 +2636,7 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
-  
+
   async createModuleFeature(feature: z.infer<typeof insertModuleFeatureSchema>): Promise<typeof moduleFeatures.$inferSelect> {
     try {
       const [newFeature] = await db.insert(moduleFeatures)
@@ -2639,14 +2644,14 @@ export class DatabaseStorage implements IStorage {
           ...feature
         })
         .returning();
-      
+
       return newFeature;
     } catch (error) {
       console.error("Error creating module feature:", error);
       throw error;
     }
   }
-  
+
   async updateModuleFeature(id: number, feature: Partial<z.infer<typeof insertModuleFeatureSchema>>): Promise<typeof moduleFeatures.$inferSelect | undefined> {
     try {
       const [updatedFeature] = await db.update(moduleFeatures)
@@ -2655,26 +2660,26 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(moduleFeatures.id, id))
         .returning();
-      
+
       return updatedFeature;
     } catch (error) {
       console.error("Error updating module feature:", error);
       throw error;
     }
   }
-  
+
   async deleteModuleFeature(id: number): Promise<boolean> {
     try {
       const result = await db.delete(moduleFeatures)
         .where(eq(moduleFeatures.id, id));
-      
+
       return result.rowCount > 0;
     } catch (error) {
       console.error("Error deleting module feature:", error);
       throw error;
     }
   }
-  
+
   async isFeatureAccessible(featurePath: string, tenantId: number): Promise<boolean> {
     try {
       // Obter o tenant
@@ -2683,37 +2688,37 @@ export class DatabaseStorage implements IStorage {
         console.log(`Tenant não encontrado: ${tenantId}`);
         return false;
       }
-      
+
       // Obter todos os módulos do plano do tenant
       const modules = await this.getModulesByPlan(tenant.planId);
       if (!modules || modules.length === 0) {
         console.log(`Nenhum módulo encontrado para o plano ${tenant.planId} do tenant ${tenantId}`);
         return false;
       }
-      
+
       // Obter os IDs dos módulos
       const moduleIds = modules.map(module => module.id);
-      
+
       // Verificar se existe alguma funcionalidade com o caminho especificado em algum dos módulos disponíveis
       // Utilização de LIKE ou expressão de padrão para verificar se featurePath corresponde
       // a algum padrão de permissão nas funcionalidades disponíveis
       const features = await db.select()
         .from(moduleFeatures)
         .where(eq(moduleFeatures.moduleId, sql`ANY(ARRAY[${moduleIds.join(',')}])`));
-      
+
       // Verificar manualmente se o featurePath corresponde a algum dos padrões de funcionalidades
       // Suporte a padrões como '/api/something/*'
       for (const feature of features) {
         // Converte padrões como '/api/products/*' para expressões regulares
         const pattern = feature.featurePath.replace(/\*/g, '.*');
         const regex = new RegExp(`^${pattern}$`);
-        
+
         if (regex.test(featurePath)) {
           console.log(`Acesso permitido: ${featurePath} corresponde ao padrão ${feature.featurePath} no módulo ${feature.moduleId}`);
           return true;
         }
       }
-      
+
       console.log(`Acesso negado: ${featurePath} não corresponde a nenhuma funcionalidade disponível para o tenant ${tenantId} no plano ${tenant.planId}`);
       return false;
     } catch (error) {
@@ -2721,37 +2726,37 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
-  
+
   async getAllFiles(): Promise<File[]> {
     return await db.select().from(files);
   }
-  
-  async getStorageInfo(): Promise<{totalFiles: number, totalSizeMB: number}> {
+
+  async getStorageInfo(): Promise<{ totalFiles: number, totalSizeMB: number }> {
     const allFiles = await this.getAllFiles();
     const totalSizeMB = allFiles.reduce(
-      (acc, file) => acc + parseFloat(file.fileSizeMB), 
+      (acc, file) => acc + parseFloat(file.fileSizeMB),
       0
     );
-    
+
     return {
       totalFiles: allFiles.length,
       totalSizeMB
     };
   }
-  
+
   async getStorageUsageByTenant(): Promise<any[]> {
     const allTenants = await this.getAllTenants();
     const result = [];
-    
+
     for (const tenant of allTenants) {
       const tenantFiles = await this.getFilesByTenant(tenant.id);
       const storageUsed = tenantFiles.reduce(
-        (acc, file) => acc + parseFloat(file.fileSizeMB), 
+        (acc, file) => acc + parseFloat(file.fileSizeMB),
         0
       );
-      
+
       const plan = await this.getPlan(tenant.planId);
-      
+
       result.push({
         id: tenant.id,
         name: tenant.name,
@@ -2761,24 +2766,24 @@ export class DatabaseStorage implements IStorage {
         planName: plan?.name || 'Desconhecido'
       });
     }
-    
+
     return result;
   }
-  
-  async cleanupUnusedFiles(tenantId: number): Promise<{filesRemoved: number, spaceSaved: number}> {
+
+  async cleanupUnusedFiles(tenantId: number): Promise<{ filesRemoved: number, spaceSaved: number }> {
     const unusedFiles = await db.select()
       .from(files)
       .where(and(
         eq(files.tenantId, tenantId),
         sql`${files.entityId} IS NULL`
       ));
-    
+
     let filesRemoved = 0;
     let spaceSaved = 0;
-    
+
     for (const file of unusedFiles) {
       // Em uma implementação completa, você removeria o arquivo físico aqui
-      
+
       // Remover registro do banco de dados
       const success = await this.deleteFile(file.id, tenantId);
       if (success) {
@@ -2786,7 +2791,7 @@ export class DatabaseStorage implements IStorage {
         spaceSaved += parseFloat(file.fileSizeMB);
       }
     }
-    
+
     return { filesRemoved, spaceSaved };
   }
 }
@@ -2795,7 +2800,7 @@ export class DatabaseStorage implements IStorage {
 const isDatabaseConfigured = process.env.DATABASE_URL && process.env.DATABASE_URL.length > 0;
 
 // Selecionar a implementação correta com base na disponibilidade do banco de dados
-export const storage = isDatabaseConfigured 
+export const storage = isDatabaseConfigured
   ? new DatabaseStorage()
   : new MemStorage();
 
@@ -2805,36 +2810,36 @@ if (isDatabaseConfigured) {
     try {
       // Verificar se existe um usuário admin no sistema
       const existingAdmin = await storage.getUserByUsername("admin");
-      
+
       if (!existingAdmin) {
         // Verificar se já existe um tenant admin ou com CNPJ "00000000000000"
         let adminTenant = await storage.getTenantByName("Admin");
-        
+
         // Se não encontrou pelo nome, tenta pelo CNPJ
         if (!adminTenant) {
           const [existingTenant] = await db.select()
             .from(tenants)
             .where(eq(tenants.cnpj, "00000000000000"));
-            
+
           if (existingTenant) {
             adminTenant = existingTenant;
           }
         }
-        
+
         // Só cria o tenant Admin se não existir nenhum tenant no sistema
         if (!adminTenant) {
-          const tenantCount = await db.select({count: sql`count(*)`}).from(tenants);
+          const tenantCount = await db.select({ count: sql`count(*)` }).from(tenants);
           const totalTenants = Number(tenantCount[0]?.count || 0);
-          
+
           // Apenas criamos o tenant Admin se não houver nenhum tenant no sistema
           if (totalTenants === 0) {
             // Buscar o plano básico para associar ao tenant admin
             const [basicPlan] = await db.select().from(plans).where(eq(plans.code, "A"));
-            
+
             if (!basicPlan) {
               throw new Error("Plano básico não encontrado. Verifique se a migração de planos foi executada corretamente.");
             }
-            
+
             // Criar tenant admin apenas na inicialização inicial do sistema
             adminTenant = await storage.createTenant({
               name: "Admin",
@@ -2850,7 +2855,7 @@ if (isDatabaseConfigured) {
             console.log("Admin tenant not present but other tenants exist - not recreating Admin tenant");
           }
         }
-        
+
         // Se temos um tenant Admin ou outro tenant existente, podemos criar o usuário admin
         if (adminTenant) {
           // Criar usuário admin

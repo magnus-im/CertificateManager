@@ -4,7 +4,8 @@ import {
   tenants, users, plans, productCategories, productSubcategories, productBase,
   products, suppliers, manufacturers, clients, entryCertificates,
   entryCertificateResults, issuedCertificates, productFiles, productBaseFiles,
-  productCharacteristics, moduleFeatures, modules, planModules
+  productCharacteristics, moduleFeatures, modules, planModules,
+  issuanceQueue, productMappings, invoiceItems, invoices
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { scrypt, randomBytes } from "crypto";
@@ -56,6 +57,36 @@ export async function clearMockData() {
   }
 
   const tenantId = mockTenant.id;
+
+  // Novas tabelas (ordem de dependência: filhos primeiro)
+  await db.delete(issuanceQueue).where(eq(issuanceQueue.tenantId, tenantId));
+  await db.delete(productMappings).where(eq(productMappings.tenantId, tenantId));
+  // Invoice Items não tem tenantId direto, mas deletamos via join ou cascade. 
+  // Na verdade, invoiceItems depende de invoices que tem tenantId. 
+  // Melhor deletar invoices e deixar o banco lidar com cascade OU deletar manualmente.
+  // Como não temos garantia de Cascade no DB configurado via drizzle se não for definido, vamos deletar manualmente.
+
+  // Para deletar invoiceItems, precisamos dos IDs das invoices do tenant.
+  const tenantInvoices = await db.select({ id: invoices.id }).from(invoices).where(eq(invoices.tenantId, tenantId));
+  if (tenantInvoices.length > 0) {
+    const invoiceIds = tenantInvoices.map(i => i.id);
+    // Drizzle doesn't support "inArray" delete directly easily without importing 'inArray'.
+    // Vamos iterar ou usar sql delete.
+    // Ou melhor, deletar invoices que o Drizzle deve saber lidar se configurado? Não.
+
+    // Vamos tentar deletar invoices direto. Se der erro de FK no invoiceItems, precisamos deletar itens antes.
+    // Como não importei 'inList' ou 'inArray', vou fazer loop ou query bruta se necessário.
+    // Mas espere, invoices e invoiceItems são tabelas novas. O mock data gera invoices?
+    // O codigo de generateMockData NÃO gera invoices.
+    // ENTÃO, se existem invoices, são frutos de importação manual do usuário no tenant mock.
+    // O usuário pode ter importado XMLs no tenant mock.
+
+    // Delete invoiceItems via subquery logic ou loop.
+    for (const inv of tenantInvoices) {
+      await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, inv.id));
+    }
+    await db.delete(invoices).where(eq(invoices.tenantId, tenantId));
+  }
 
   await db.delete(issuedCertificates).where(eq(issuedCertificates.tenantId, tenantId));
   await db.delete(entryCertificateResults).where(eq(entryCertificateResults.tenantId, tenantId));

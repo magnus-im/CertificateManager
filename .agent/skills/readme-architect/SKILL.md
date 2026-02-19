@@ -34,7 +34,9 @@ O arquivo `README.md` DEVE ser gerado em **Português do Brasil (pt-br)** e segu
 
 #### Estrutura Obrigatória
 
-1.  **Título e Descrição Curta**: Nome do projeto e uma frase de efeito sobre o que ele faz.
+1.  **Cabeçalho Centralizado**:
+    -   Use HTML (`<div align="center">`) para centralizar o Título e Subtítulo.
+    -   **Badges**: Inclua badges do Shields.io abaixo do título (Status, Licença, Versão).
 2.  **Descrição Detalhada**: 1-2 parágrafos explicando o problema que o projeto resolve e suas principais capacidades.
 3.  **🚀 Funcionalidades (Features)**:
     -   Liste as funcionalidades principais em bullet points.
@@ -53,20 +55,25 @@ O arquivo `README.md` DEVE ser gerado em **Português do Brasil (pt-br)** e segu
     -   Liste os scripts principais (`npm run dev`, `npm run build`, etc.) com explicações.
     -   **Importante**: Mencione explicitamente que ao rodar `npm run dev`, o Frontend (Vite) roda na porta **5173** e o Backend na porta **5000**.
 7.  **🔐 Credenciais (Opcional)**:
-    -   Se houver um *seed* de banco de dados que cria usuários padrão (admin), documente-os aqui (nunca exponha senhas reais de produção, apenas padrões de desenvolvimento).
+    -   Use **Tabelas Markdown** para listar usuários padrão (se houver seed).
+    -   Exemplo: `| Usuário | Senha | Acesso |`
 8.  **📝 Licença**:
     -   Mencione a licença do projeto (MIT, Proprietária, etc.).
 
 ### Passo 3: Guia de Estilo e Formatação
 
+-   **Codificação**: O arquivo deve ser salvo estritamente em **UTF-8** (padrão GitHub).
+-   **Layout Visual**:
+    -   **Centralização**: Use HTML `<div align="center">` apenas no cabeçalho.
+    -   **Badges**: Use badges para dar um aspecto profissional (`https://img.shields.io/...`).
+    -   **Tabelas**: Sempre use tabelas para listas de dados estruturados (credenciais, variaveis de ambiente).
 -   **Emojis**: Use emojis nos títulos de nível 2 (`##`) para dar vida ao documento.
     -   Exemplos: 🚀, 🏗️, 🔧, 📂, 📝, 🤝, 📞.
--   **Badges**: Se possível, inclua badges no topo (status do build, versão, licença).
 -   **Clareza**: Use linguagem clara, direta e profissional.
 -   **Markdown**: Use formatação rica (negrito, itálico, code blocks) para melhorar a legibilidade.
 
 ### Passo 4: Execução
 
-1.  Gere o conteúdo completo em memória.
+1.  Gere o conteúdo completo em memória seguindo o layout aprimorado.
 2.  Use a ferramenta `write_to_file` para criar ou sobrescrever o arquivo `README.md` na raiz do projeto.
 3.  Opcional: Se o projeto tiver uma pasta `docs/`, verifique se há necessidade de criar arquivos auxiliares, mas mantenha o `README.md` principal como a fonte da verdade.

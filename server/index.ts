@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { subscriptionManager } from "./services/subscription-manager";
 import { setupAuth } from "./auth";
 import { checkSubscription } from "./middlewares/subscription-check";
+import { xmlService } from "./services/xmlService";
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -88,5 +89,8 @@ app.use((req, res, next) => {
 
     // Iniciar o gerenciador de assinaturas
     subscriptionManager.startPeriodicCheck();
+
+    // Iniciar o processador da fila de NF-e
+    xmlService.startQueueProcessor();
   });
 })();

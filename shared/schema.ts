@@ -104,13 +104,13 @@ export const productBase = pgTable("product_base", {
   subcategoryId: integer("subcategory_id").notNull().references(() => productSubcategories.id),
   internalCode: text("internal_code"),
   defaultMeasureUnit: text("default_measure_unit").notNull(),
-  
+
   // Informações de classificação e segurança
   riskClass: text("risk_class"), // Classe ou Subclasse de Risco
   riskNumber: text("risk_number"), // Número do Risco
   unNumber: text("un_number"), // Número ONU
   packagingGroup: text("packaging_group"), // Grupo de Embalagem
-  
+
   tenantId: integer("tenant_id").notNull().references(() => tenants.id),
   active: boolean("active").notNull().default(true),
 });
@@ -790,3 +790,154 @@ export type File = typeof files.$inferSelect;
 export type InsertFile = z.infer<typeof insertFileSchema>;
 export type ModuleFeature = typeof moduleFeatures.$inferSelect;
 export type InsertModuleFeature = z.infer<typeof insertModuleFeatureSchema>;
+
+// NF-e Import Module Tables
+
+// 1. Mapeamento de Produtos (De-Para)
+export const productMappings = pgTable("product_mappings", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+  supplierSku: text("supplier_sku").notNull(), // Código do produto no fornecedor (XML)
+  productId: integer("product_id").notNull().references(() => products.id), // Nosso produto interno
+  supplierCnpj: text("supplier_cnpj"), // Opcional: restringe o mapeamento a um fornecedor específico
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// 2. Invoices (Cabeçalho da NF-e)
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+  accessKey: text("access_key").notNull().unique(), // Chave de acesso da NF-e
+  number: text("number").notNull(),
+  series: text("series").notNull(),
+  emissionDate: timestamp("emission_date").notNull(),
+  issuerCnpj: text("issuer_cnpj").notNull(),
+  issuerName: text("issuer_name").notNull(),
+  recipientCnpj: text("recipient_cnpj").notNull(),
+  recipientName: text("recipient_name").notNull(),
+  xmlContent: text("xml_content"), // Armazena o XML completo se necessário
+  status: text("status").notNull().default("imported"), // imported, processed, error
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// 3. Invoice Items (Itens da NF-e)
+export const invoiceItems = pgTable("invoice_items", {
+  id: serial("id").primaryKey(),
+  invoiceId: integer("invoice_id").notNull().references(() => invoices.id),
+  sequenceNumber: integer("sequence_number"),
+  productCode: text("product_code").notNull(),
+  productName: text("product_name").notNull(),
+  quantity: numeric("quantity").notNull(),
+  unit: text("unit").notNull(),
+  unitValue: numeric("unit_value").notNull(),
+  ncm: text("ncm"),
+  cfop: text("cfop"),
+});
+
+// 4. Issuance Queue (Fila de Emissão)
+export const issuanceQueue = pgTable("issuance_queue", {
+  id: serial("id").primaryKey(),
+  invoiceItemId: integer("invoice_item_id").notNull().references(() => invoiceItems.id),
+  status: text("status").notNull().default("PENDING"), // PENDING, MAPPING_REQUIRED, READY, ISSUED, ERROR
+  priority: integer("priority").default(0),
+  tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  errorMessage: text("error_message"),
+});
+
+// Insert Schemas for New Tables
+export const insertProductMappingSchema = createInsertSchema(productMappings).pick({
+  tenantId: true,
+  supplierSku: true,
+  productId: true,
+  supplierCnpj: true,
+});
+
+export const insertInvoiceSchema = createInsertSchema(invoices).pick({
+  tenantId: true,
+  accessKey: true,
+  number: true,
+  series: true,
+  emissionDate: true,
+  issuerCnpj: true,
+  issuerName: true,
+  recipientCnpj: true,
+  recipientName: true,
+  xmlContent: true,
+  status: true,
+});
+
+export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).pick({
+  invoiceId: true,
+  productCode: true,
+  productName: true,
+  quantity: true,
+  unit: true,
+  unitValue: true,
+  ncm: true,
+  cfop: true,
+}).extend({
+  quantity: z.union([z.string(), z.number()]),
+  unitValue: z.union([z.string(), z.number()]),
+});
+
+export const insertIssuanceQueueSchema = createInsertSchema(issuanceQueue).pick({
+  invoiceItemId: true,
+  status: true,
+  priority: true,
+  tenantId: true,
+  errorMessage: true,
+});
+
+// Relations for New Tables
+export const productMappingsRelations = relations(productMappings, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [productMappings.tenantId],
+    references: [tenants.id],
+  }),
+  product: one(products, {
+    fields: [productMappings.productId],
+    references: [products.id],
+  }),
+}));
+
+export const invoicesRelations = relations(invoices, ({ one, many }) => ({
+  tenant: one(tenants, {
+    fields: [invoices.tenantId],
+    references: [tenants.id],
+  }),
+  items: many(invoiceItems),
+}));
+
+export const invoiceItemsRelations = relations(invoiceItems, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [invoiceItems.invoiceId],
+    references: [invoices.id],
+  }),
+  issuanceQueueEntry: one(issuanceQueue, {
+    fields: [invoiceItems.id],
+    references: [issuanceQueue.invoiceItemId], // This might need to be defined on issuanceQueue side properly or as one-to-one
+  }),
+}));
+
+export const issuanceQueueRelations = relations(issuanceQueue, ({ one }) => ({
+  invoiceItem: one(invoiceItems, {
+    fields: [issuanceQueue.invoiceItemId],
+    references: [invoiceItems.id],
+  }),
+  tenant: one(tenants, {
+    fields: [issuanceQueue.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+// Export Types for New Tables
+export type ProductMapping = typeof productMappings.$inferSelect;
+export type InsertProductMapping = z.infer<typeof insertProductMappingSchema>;
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type InvoiceItem = typeof invoiceItems.$inferSelect;
+export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
+export type IssuanceQueueEntry = typeof issuanceQueue.$inferSelect;
+export type InsertIssuanceQueueEntry = z.infer<typeof insertIssuanceQueueSchema>;

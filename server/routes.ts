@@ -17,6 +17,8 @@ import {
 import { tempUpload, moveFileToFinalStorage, getFileSizeInMB, removeFile, getFileUrl } from "./services/file-upload";
 import { checkStorageLimits, updateStorageUsed } from "./middlewares/storage-limits";
 import { checkFeatureAccess } from "./middlewares/feature-access";
+import multer from "multer";
+import { xmlService } from "./services/xmlService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Função para formatar números com 4 casas decimais
@@ -1705,7 +1707,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       const user = req.user!;
       const productId = req.query.productId ? Number(req.query.productId) : undefined;
 
-      let characteristics;
+      let characteristics: any[];
       if (productId) {
         characteristics = await storage.getCharacteristicsByProduct(productId, user.tenantId);
       } else {
@@ -4156,6 +4158,111 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       res.json(result);
     } catch (error) {
       next(error);
+    }
+  });
+
+  // NF-e Import Routes
+  const upload = multer({ storage: multer.memoryStorage() });
+
+  app.post("/api/nfe/import", isAuthenticated, upload.single('xml'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nenhum arquivo enviado." });
+      }
+
+      const user = req.user!;
+      const result = await xmlService.processNfeXml(req.file.buffer, user.tenantId);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error: any) {
+      console.error("Erro na rota de importação de NFe:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/nfe/queue", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user!;
+      const queue = await xmlService.getIssuanceQueue(user.tenantId);
+      res.json(queue);
+    } catch (error: any) {
+      console.error("Erro ao buscar fila de emissão:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/nfe/mapping", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user!;
+      const { queueId, productId } = req.body;
+
+      if (!queueId || !productId) {
+        return res.status(400).json({ message: "queueId e productId são obrigatórios." });
+      }
+
+      const result = await xmlService.resolveItemMapping(Number(queueId), Number(productId), user.tenantId);
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error: any) {
+      console.error("Erro ao resolver mapeamento:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.delete("/api/nfe/queue/:id", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user!;
+      const queueId = parseInt(req.params.id);
+      await xmlService.deleteQueueItem(queueId, user.tenantId);
+      res.json({ success: true, message: "Item removido da fila." });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/nfe/queue/:id/lots", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user!;
+      const queueId = parseInt(req.params.id);
+      const lots = await xmlService.getAvailableLots(queueId, user.tenantId);
+      res.json(lots);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/nfe/queue/:id/issue-manual", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user!;
+      const queueId = parseInt(req.params.id);
+      const { selectedLots } = req.body; // Array of { entryCertificateId, quantity }
+
+      if (!selectedLots || !Array.isArray(selectedLots) || selectedLots.length === 0) {
+        return res.status(400).json({ message: "Lotes selecionados inválidos." });
+      }
+
+      const result = await xmlService.issueManually(queueId, selectedLots, user.tenantId);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/nfe/queue/:id/unlink", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user!;
+      const queueId = parseInt(req.params.id);
+      const result = await xmlService.unlinkMapping(queueId, user.tenantId);
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
 

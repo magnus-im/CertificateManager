@@ -25,6 +25,7 @@ import AdminStoragePage from "@/pages/admin/storage-page";
 import AdminUsersPage from "@/pages/admin/users-page";
 import AdminModuleFeaturesPage from "@/pages/admin/module-features-page";
 import AdminMockDataPage from "@/pages/admin/mock-data-page";
+import NfeImportPage from "@/pages/nfe-import-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AdminRoute } from "./lib/admin-route";
 import { AuthProvider } from "./hooks/use-auth";
@@ -39,6 +40,7 @@ function Router() {
       <ProtectedRoute path="/certificates" component={CertificatesPage} />
       <ProtectedRoute path="/issued-certificates" component={IssuedCertificatesPage} />
       <ProtectedRoute path="/issued-certificates/:id" component={IssuedCertificateDetailPage} />
+      <ProtectedRoute path="/nfe-import" component={NfeImportPage} />
 
       {/* Produtos - Hierarquia */}
       <ProtectedRoute path="/product-categories" component={ProductCategoriesPage} />

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Layout } from "@/components/layout/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,10 @@ import {
   Download,
   Calendar,
   FileText,
-  Trash2
+  Trash2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { IssuedCertificate, EntryCertificate, Client, Supplier, Manufacturer } from "@shared/schema";
 import { IssueCertificateForm } from "@/components/certificates/issue-certificate-form";
@@ -61,6 +64,26 @@ export default function IssuedCertificatesPage() {
     customLot: "",
   });
 
+  // Estado de ordenação
+  const [sortConfig, setSortConfig] = useState<{ field: string; direction: 'asc' | 'desc' }>({
+    field: 'issueDate',
+    direction: 'desc',
+  });
+
+  const handleSort = useCallback((field: string) => {
+    setSortConfig(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'desc' ? 'asc' : 'desc',
+    }));
+  }, []);
+
+  const getSortIcon = useCallback((field: string) => {
+    if (sortConfig.field !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-30" />;
+    return sortConfig.direction === 'asc'
+      ? <ArrowUp className="h-3 w-3 ml-1" />
+      : <ArrowDown className="h-3 w-3 ml-1" />;
+  }, [sortConfig]);
+
   // Estado dos filtros para boletins de entrada
   const [entryCertFilters, setEntryCertFilters] = useState({
     manufacturerId: "",
@@ -100,9 +123,11 @@ export default function IssuedCertificatesPage() {
     queryKey: ["/api/manufacturers"],
   });
 
-  // Filter certificates based on filter criteria
-  const filteredCertificates = issuedCertificates
-    ? issuedCertificates.filter(cert => {
+  // Filter and sort certificates
+  const filteredCertificates = useMemo(() => {
+    if (!issuedCertificates) return [];
+
+    const filtered = issuedCertificates.filter(cert => {
       let matches = true;
 
       if (filters.clientId && cert.clientId.toString() !== filters.clientId) {
@@ -142,8 +167,38 @@ export default function IssuedCertificatesPage() {
       }
 
       return matches;
-    })
-    : [];
+    });
+
+    // Ordenação
+    filtered.sort((a, b) => {
+      let valA: any, valB: any;
+      switch (sortConfig.field) {
+        case 'issueDate':
+          valA = new Date(a.issueDate).getTime();
+          valB = new Date(b.issueDate).getTime();
+          break;
+        case 'invoiceNumber':
+          valA = a.invoiceNumber?.toLowerCase() || '';
+          valB = b.invoiceNumber?.toLowerCase() || '';
+          break;
+        case 'clientName':
+          valA = (a.clientName || '').toLowerCase();
+          valB = (b.clientName || '').toLowerCase();
+          break;
+        case 'productName':
+          valA = (a.productName || '').toLowerCase();
+          valB = (b.productName || '').toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [issuedCertificates, filters, sortConfig]);
 
   // Filter entry certificates based on filter criteria
   const filteredEntryCertificates = useMemo(() => {
@@ -423,12 +478,20 @@ export default function IssuedCertificatesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nº Nota Fiscal</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Produto</TableHead>
+                      <TableHead className="cursor-pointer select-none" onClick={() => handleSort('invoiceNumber')}>
+                        <div className="flex items-center">Nº Nota Fiscal{getSortIcon('invoiceNumber')}</div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer select-none" onClick={() => handleSort('clientName')}>
+                        <div className="flex items-center">Cliente{getSortIcon('clientName')}</div>
+                      </TableHead>
+                      <TableHead className="cursor-pointer select-none" onClick={() => handleSort('productName')}>
+                        <div className="flex items-center">Produto{getSortIcon('productName')}</div>
+                      </TableHead>
                       <TableHead>Lote</TableHead>
                       <TableHead>Quantidade</TableHead>
-                      <TableHead>Data Emissão</TableHead>
+                      <TableHead className="cursor-pointer select-none" onClick={() => handleSort('issueDate')}>
+                        <div className="flex items-center">Data Emissão{getSortIcon('issueDate')}</div>
+                      </TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>

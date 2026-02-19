@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatDate, toISODateString } from "@/lib/utils";
-import { Client, EntryCertificate, Product } from "@shared/schema";
+import { Client, EntryCertificate, Product, IssuedCertificate } from "@shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -14,18 +14,24 @@ import { Switch } from "@/components/ui/switch";
 
 interface IssueCertificateFormProps {
   entryCertificateId?: number;
-  onSuccess?: () => void;
+  onSuccess?: (data?: IssuedCertificate) => void;
+  defaultValues?: {
+    clientId?: string;
+    invoiceNumber?: string;
+    soldQuantity?: string;
+    measureUnit?: string;
+  };
 }
 
-export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCertificateFormProps) {
+export function IssueCertificateForm({ entryCertificateId, onSuccess, defaultValues }: IssueCertificateFormProps) {
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
-    clientId: "",
-    invoiceNumber: "",
+    clientId: defaultValues?.clientId || "",
+    invoiceNumber: defaultValues?.invoiceNumber || "",
     issueDate: toISODateString(new Date()),
-    soldQuantity: "",
-    measureUnit: "",
+    soldQuantity: defaultValues?.soldQuantity || "",
+    measureUnit: defaultValues?.measureUnit || "",
     customLot: "",
     showSupplierInfo: false,
     observations: "",
@@ -47,8 +53,8 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
     if (entryCertificate) {
       setFormData(prev => ({
         ...prev,
-        measureUnit: entryCertificate.measureUnit,
-        customLot: entryCertificate.internalLot,
+        measureUnit: prev.measureUnit || entryCertificate.measureUnit,
+        customLot: prev.customLot || entryCertificate.internalLot,
       }));
     }
   }, [entryCertificate]);
@@ -72,9 +78,10 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
         observations: formData.observations,
       };
 
-      return await apiRequest("POST", "/api/issued-certificates", payload);
+      const res = await apiRequest("POST", "/api/issued-certificates", payload);
+      return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/issued-certificates"] });
 
       toast({
@@ -83,7 +90,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
       });
 
       if (onSuccess) {
-        onSuccess();
+        onSuccess(data);
       }
     },
     onError: (error) => {
@@ -297,7 +304,7 @@ export function IssueCertificateForm({ entryCertificateId, onSuccess }: IssueCer
           <Button
             type="button"
             variant="outline"
-            onClick={onSuccess}
+            onClick={() => onSuccess && onSuccess()}
           >
             Cancelar
           </Button>

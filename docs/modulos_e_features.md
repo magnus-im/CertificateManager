@@ -64,6 +64,16 @@ Este documento lista todos os módulos do sistema e suas respectivas funcionalid
 * **API v1** - `/api/v1*` - Acesso à API versão 1
 * **Webhooks** - `/api/webhooks*` - Criação e gerenciamento de webhooks
 
+## 9. Módulo Importação NFe (nfe)
+**Descrição:** Importação e processamento de XMLs de NF-e
+
+### Features:
+* **Importação** - `/api/nfe/import` - Upload de XML
+* **Fila** - `/api/nfe/queue*` - Gerenciamento da fila de processamento
+* **Mapeamento** - `/api/nfe/mapping` - Vinculação de produtos
+* **Lotes** - `/api/nfe/lots` - Consulta de disponibilidade
+
+
 ---
 
 ## Módulos por Plano
@@ -89,3 +99,4 @@ Este documento lista todos os módulos do sistema e suas respectivas funcionalid
 * Módulo Análises (analytics)
 * Módulo Multi-usuário (multi_user)
 * Módulo API (api)
+* Módulo Importação NFe (nfe)

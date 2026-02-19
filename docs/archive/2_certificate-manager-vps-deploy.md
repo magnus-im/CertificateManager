@@ -48,7 +48,7 @@ sudo -u postgres psql
 
 ```sql
 -- Criar usuário com senha forte
-CREATE USER appuser WITH PASSWORD 'SuaSenhaForteAqui2024!@#';
+CREATE USER appuser WITH PASSWORD 'StrongPass2024!';
 CREATE DATABASE tenant_management_db OWNER appuser;
 GRANT ALL PRIVILEGES ON DATABASE tenant_management_db TO appuser;
 \q
@@ -80,7 +80,7 @@ nano .env
 
 ```env
 # Database Configuration
-DATABASE_URL="postgresql://appuser:SuaSenhaForteAqui2024!@#@localhost:5432/tenant_management_db"
+DATABASE_URL="postgresql://appuser:StrongPass2024!@localhost:5432/tenant_management_db"
 
 # Application Configuration
 NODE_ENV=production

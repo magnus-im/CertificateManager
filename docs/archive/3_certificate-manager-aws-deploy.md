@@ -107,7 +107,7 @@ sudo -u postgres psql
 ```
 
 ```sql
-CREATE USER appuser WITH PASSWORD 'SuaSenhaForteAWS2024!@#';
+CREATE USER appuser WITH PASSWORD 'StrongPass2024!';
 CREATE DATABASE tenant_management_db OWNER appuser;
 GRANT ALL PRIVILEGES ON DATABASE tenant_management_db TO appuser;
 \q
@@ -123,7 +123,7 @@ GRANT ALL PRIVILEGES ON DATABASE tenant_management_db TO appuser;
 5. **Settings**:
    - DB Instance identifier: certificate-manager-db
    - Master username: appuser
-   - Master password: SuaSenhaForteRDS2024!@#
+   - Master password: StrongPass2024!
 6. **Instance**: db.t3.micro
 7. **Storage**: 20GB (Free tier)
 8. **Connectivity**:
@@ -161,8 +161,7 @@ cd CertificateManager
 
 # Instalar dependências
 npm install
-npm install dotenv pg
-npm install --save-dev @types/pg
+npm install
 ```
 
 ### Passo 7: Configurar Aplicação
@@ -179,7 +178,7 @@ nano .env
 
 **Para PostgreSQL local (Opção A)**:
 ```env
-DATABASE_URL="postgresql://appuser:SuaSenhaForteAWS2024!@#@localhost:5432/tenant_management_db"
+DATABASE_URL="postgresql://appuser:StrongPass2024!@localhost:5432/tenant_management_db"
 NODE_ENV=production
 PORT=5000
 SESSION_SECRET="gere-uma-chave-de-64-caracteres-super-segura-para-producao"
@@ -188,7 +187,7 @@ VITE_API_URL=http://SEU-IP-ELASTICO
 
 **Para RDS (Opção B)**:
 ```env
-DATABASE_URL="postgresql://appuser:SuaSenhaForteRDS2024!@#@seu-endpoint-rds.region.rds.amazonaws.com:5432/tenant_management_db"
+DATABASE_URL="postgresql://appuser:StrongPass2024!@seu-endpoint-rds.region.rds.amazonaws.com:5432/tenant_management_db"
 NODE_ENV=production
 PORT=5000
 SESSION_SECRET="gere-uma-chave-de-64-caracteres-super-segura-para-producao"
@@ -201,7 +200,8 @@ VITE_API_URL=http://SEU-IP-ELASTICO
 # Executar migrações
 npm run db:push
 
-# Popular dados iniciais (conectar ao banco e executar SQLs dos guias anteriores)
+# Popular dados iniciais (Planos, Módulos, Usuário Admin)
+npm run db:seed
 
 # Build para produção
 npm run build

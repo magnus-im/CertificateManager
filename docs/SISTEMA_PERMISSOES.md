@@ -30,6 +30,7 @@ Os módulos agrupam funcionalidades relacionadas do sistema:
 | 6 | analytics | Análises | Relatórios e dashboards avançados | ✗ |
 | 7 | multi_user | Multi-usuário | Permissões de usuários avançadas | ✗ |
 | 8 | api | API | Acesso à API do sistema | ✗ |
+| 9 | nfe | Importação NFe | Importação e processamento de XMLs de NF-e | ✗ |
 
 ### 3. Funcionalidades (`module_features`)
 
@@ -83,6 +84,13 @@ As funcionalidades são endpoints específicos que cada módulo disponibiliza:
 - `/api/external/*` - API externa
 - `/api/webhooks/*` - Configuração de webhooks
 
+#### Módulo Importação NFe (ID: 9)
+- `/api/nfe/import` - Upload e importação de XML
+- `/api/nfe/queue` - Visualização da fila de processamento
+- `/api/nfe/mapping` - Mapeamento de produtos
+- `/api/nfe/lots` - Consulta de disponibilidade de lotes
+- `/api/nfe/queue/*` - Gerenciamento da fila (exclusão, unificação, emissão manual)
+
 ### 4. Associação Plano-Módulo (`plan_modules`)
 
 Define quais módulos cada plano tem acesso:
@@ -104,6 +112,7 @@ Define quais módulos cada plano tem acesso:
 - Análises
 - Multi-usuário
 - API
+- Importação NFe
 
 ## Como Funciona o Sistema de Permissões
 

@@ -28,11 +28,10 @@ async function seed() {
     const modulesData = [
         { code: "core", name: "Core", description: "Funcionalidades básicas do sistema", isCore: true },
         { code: "products", name: "Produtos", description: "Gerenciamento completo de produtos", isCore: false },
-        { code: "certificates", name: "Certificados", description: "Gerenciamento básico de certificados", isCore: false },
-        { code: "certificates_advanced", name: "Certificados Avançados", description: "Recursos avançados de certificados", isCore: false },
+        { code: "quality_entry", name: "Inspeção de Recebimento", description: "Gerenciamento de entrada e fornecedores", isCore: false },
+        { code: "quality_out", name: "Emissão de Laudos", description: "Geração de certificados de saída", isCore: false },
         { code: "traceability", name: "Rastreabilidade", description: "Sistema de rastreabilidade completo", isCore: false },
         { code: "analytics", name: "Análises", description: "Relatórios e dashboards avançados", isCore: false },
-        { code: "multi_user", name: "Multi-usuário", description: "Permissões de usuários avançadas", isCore: false },
         { code: "api", name: "API", description: "Acesso à API do sistema", isCore: false },
     ];
 
@@ -54,6 +53,8 @@ async function seed() {
         // Core
         { moduleCode: "core", featurePath: "/api/user", featureName: "Perfil de Usuário", description: "Acesso ao perfil do usuário atual" },
         { moduleCode: "core", featurePath: "/api/files*", featureName: "Arquivos Básicos", description: "Acesso a arquivos gerais do sistema" },
+        { moduleCode: "core", featurePath: "/api/users*", featureName: "Gerenciamento de Usuários", description: "Criação e administração de usuários da equipe" },
+        { moduleCode: "core", featurePath: "/api/admin/tenants*", featureName: "Gerenciamento de Tenants", description: "Administração do sistema (Apenas Super Admin)" },
 
         // Products
         { moduleCode: "products", featurePath: "/api/products*", featureName: "Produtos", description: "Gerenciamento de produtos" },
@@ -64,26 +65,22 @@ async function seed() {
         { moduleCode: "products", featurePath: "/api/suppliers*", featureName: "Fornecedores", description: "Gerenciamento de fornecedores" },
         { moduleCode: "products", featurePath: "/api/package-types*", featureName: "Tipos de Embalagem", description: "Gerenciamento de tipos de embalagem" },
 
-        // Certificates
-        { moduleCode: "certificates", featurePath: "/api/entry-certificates*", featureName: "Boletins de Entrada", description: "Gerenciamento de boletins de entrada" },
-        { moduleCode: "certificates", featurePath: "/api/entry-certificates/*/results*", featureName: "Resultados de Entrada", description: "Gerenciamento de resultados de testes" },
-        { moduleCode: "certificates", featurePath: "/api/certificates/view*", featureName: "Visualização de Certificados", description: "Visualização de certificados em HTML/PDF" },
+        // Quality Entry (Antigo Certificates)
+        { moduleCode: "quality_entry", featurePath: "/api/entry-certificates*", featureName: "Boletins de Entrada", description: "Gerenciamento de boletins de entrada" },
+        { moduleCode: "quality_entry", featurePath: "/api/entry-certificates/*/results*", featureName: "Resultados de Entrada", description: "Gerenciamento de resultados de testes" },
+        { moduleCode: "quality_entry", featurePath: "/api/certificates/view*", featureName: "Visualização de Certificados", description: "Visualização de certificados em HTML/PDF" },
 
-        // Certificates Advanced
-        { moduleCode: "certificates_advanced", featurePath: "/api/issued-certificates*", featureName: "Boletins Emitidos", description: "Gerenciamento de boletins emitidos" },
-        { moduleCode: "certificates_advanced", featurePath: "/api/certificates/bulk*", featureName: "Processamento em Lote", description: "Processamento em lote de certificados" },
+        // Quality Out (Antigo Certificates Advanced)
+        { moduleCode: "quality_out", featurePath: "/api/issued-certificates*", featureName: "Boletins Emitidos", description: "Gerenciamento de boletins emitidos" },
+        { moduleCode: "quality_out", featurePath: "/api/certificates/bulk*", featureName: "Processamento em Lote", description: "Processamento em lote de certificados" },
+        { moduleCode: "quality_out", featurePath: "/api/clients*", featureName: "Clientes", description: "Gerenciamento de clientes" },
 
         // Traceability
-        { moduleCode: "traceability", featurePath: "/api/clients*", featureName: "Clientes", description: "Gerenciamento de clientes" },
         { moduleCode: "traceability", featurePath: "/api/traceability*", featureName: "Rastreabilidade", description: "Sistema de rastreabilidade" },
 
         // Analytics
         { moduleCode: "analytics", featurePath: "/api/reports*", featureName: "Relatórios", description: "Geração de relatórios" },
         { moduleCode: "analytics", featurePath: "/api/dashboard/stats*", featureName: "Estatísticas do Dashboard", description: "Visualização de estatísticas no dashboard" },
-
-        // Multi User
-        { moduleCode: "multi_user", featurePath: "/api/users*", featureName: "Gerenciamento de Usuários", description: "Criação e administração de usuários" },
-        { moduleCode: "multi_user", featurePath: "/api/admin/tenants*", featureName: "Gerenciamento de Tenants", description: "Administração de tenants" },
 
         // API
         { moduleCode: "api", featurePath: "/api/v1*", featureName: "API v1", description: "Acesso à API pública" },
@@ -123,9 +120,9 @@ async function seed() {
     const getPlanId = (code: string) => dbPlans.find(p => p.code === code)?.id;
 
     const planModulesData = [
-        { planCode: "A", moduleCodes: ["core"] },
-        { planCode: "B", moduleCodes: ["core", "products", "certificates"] },
-        { planCode: "C", moduleCodes: ["core", "products", "certificates", "certificates_advanced", "traceability", "analytics", "multi_user", "api"] },
+        { planCode: "A", moduleCodes: ["core", "products", "quality_entry"] },
+        { planCode: "B", moduleCodes: ["core", "products", "quality_entry", "quality_out"] },
+        { planCode: "C", moduleCodes: ["core", "products", "quality_entry", "quality_out", "traceability", "analytics", "api"] },
     ];
 
     for (const pm of planModulesData) {

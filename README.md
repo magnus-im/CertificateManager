@@ -11,103 +11,110 @@
 
 ---
 
-O **Certificate Manager** é uma solução completa para gestão de certificações de qualidade, rastreabilidade de produtos e controle de estoque, projetada como uma plataforma SaaS Multi-tenant robusta e escalável.
+O **Certificate Manager** é uma solução completa para gestão de certificações de qualidade, rastreabilidade de matérias-primas e controle de estoque, projetada primariamente como uma plataforma SaaS Multi-tenant robusta e escalável. 
 
-O sistema elimina a complexidade do gerenciamento de certificados de fornecedores (entrada) e emissão de laudos técnicos para clientes (saída), garantindo conformidade total e rastreabilidade ponta a ponta.
+O sistema elimina a complexidade de gerenciar a entrada de laudos de fornecedores e a emissão técnica para clientes finais. Ele assegura total conformidade, estruturação hierárquica de informações químicas ou físicas de produtos e rastreabilidade ponta a ponta dos lotes industriais.
 
 ## 🚀 Funcionalidades
 
-### 📦 Gestão de Produtos e Estoque
-- **Arquitetura Hierárquica**: Categorias -> Subcategorias -> Produto Base -> Variantes (SKUs).
-- **Especificações Técnicas**: Cadastro detalhado de características físico-químicas e limites de aceitação.
-- **Gestão de Arquivos**: Anexação de documentos técnicos (FISPQ, Fichas Técnicas) e imagens.
+### 🏢 Módulo SaaS (Tenant Management)
+* **Isolamento Multi-tenant**: Dados categorizados e isolados de forma segura por empresa (`tenant_id`).
+* **Gestão de Planos e Assinaturas**: Controle granular de recursos e acesso via planos (ex: Básico, Intermediário, Completo).
+* **Feature Gating**: Ativação e desativação centralizada de módulos baseados na assinatura de cada empresa.
 
-### 📥 Importação de NF-e (Novo)
-- **Processamento de XML**: Importação automática de Notas Fiscais Eletrônicas via upload de arquivo XML.
-- **Mapeamento Inteligente**: Vinculação de produtos do fornecedor (código/SKU externo) com produtos internos do sistema.
-- **Fila de Emissão**: Geração automática de uma fila de trabalho para emissão de certificados baseada nas notas de entrada.
-- **Rastreabilidade Automática**: Captura automática de dados críticos como Chave de Acesso, Número da Nota, Série e Datas.
+### 📦 Módulo de Produtos e Estoque
+* **Arquitetura Hierárquica**: Organização em Categorias > Subcategorias > Produto Base > Variantes (SKUs).
+* **Especificações Técnicas**: Cadastro de características físico-químicas, parâmetros de aceitação mínima/máxima e métodos de análise.
+* **Gestão de Documentos**: Armazenamento e visualização de documentações críticas anexadas, como FISPQ, laudos originais e Fichas Técnicas.
 
-### 📜 Gestão de Certificados
-- **Boletins de Entrada**: Registro e validação de laudos de fornecedores com verificação automática de conformidade.
-- **Boletins de Saída (Emissão)**: Geração de laudos técnicos para clientes em formato PDF profissional.
-- **Rastreabilidade Total**: Link direto entre a matéria-prima recebida (Lote Fornecedor) e o produto entregue (Lote Interno).
+### 📥 Módulo de Importação NF-e (Novo)
+* **Engenharia de XML**: Upload e processamento automatizado de Notas Fiscais Eletrônicas em formato XML.
+* **Mapeamento de Produtos (De-Para)**: Vínculo inteligente salvando correlações entre códigos de fornecedores e o catálogo interno.
+* **Fila de Inspeção**: Geração automática de pendências no recebimento, otimizando o workflow do controle de qualidade.
 
-### 🏢 Multi-tenant e Acesso
-- **Isolamento de Dados**: Separação completa de dados por empresa (Tenant).
-- **Planos de Assinatura**: Controle de recursos e limites baseado em planos (Básico, Intermediário, Completo).
-- **Feature Gates**: Ativação/desativação dinâmica de módulos.
+### 📜 Módulo de Certificados e Rastreabilidade
+* **Boletins de Entrada**: Registro minucioso de laudos recebidos de fornecedores para aprovação/reprovação técnica.
+* **Boletins de Saída (Emissão)**: Ferramenta ágil para geração de laudos técnicos otimizados para clientes em PDF.
+* **Rastreabilidade Ponta a Ponta**: Mapeamento e navegação visual permitindo auditar o uso de lotes de fabricantes específicos através da cadeia até o cliente final.
 
 ## 🏗️ Arquitetura Técnica (Tech Stack)
 
 ### Frontend
-- **React 18** + **TypeScript**: Interface moderna e responsiva.
-- **Vite**: Build tool de alta performance.
-- **Tailwind CSS** + **shadcn/ui**: Design system consistente.
-- **TanStack Query**: Gerenciamento de estado server-side.
+* **React 18** + **TypeScript**: Construção de interface reativa e tipagem estática.
+* **Vite**: Ferramenta de build de altíssima performance estruturada para módulos nativos.
+* **Tailwind CSS** + **shadcn/ui**: Utilitários e design system para aparência moderna e consistente.
+* **TanStack React Query**: Controle e cache do estado que flui do servidor via requisições API.
+* **Wouter**: Roteamento leve no ecossistema React.
 
 ### Backend
-- **Node.js** + **Express**: API RESTful escalável.
-- **Drizzle ORM**: Camada de dados type-safe e performática.
-- **PostgreSQL**: Banco de dados relacional robusto.
-- **Zod**: Validação de esquemas ponta a ponta.
+* **Node.js** com **Express**: Criação de APIs RESTful estruturadas e manuteníveis.
+* **Drizzle ORM**: Integração de banco de dados fortemente tipada (type-safe).
+* **PostgreSQL**: SGBD Relacional robusto focado em integridade, suportando perfeitamente relacionamento multi-tenant.
+* **Zod**: Validação centralizada garantindo contratos estritos entre cliente e servidor com *drizzle-zod*.
+* **Passport.js**: Autenticação baseada em sessão garantindo segurança das rotas e perfis.
 
 ## 📂 Estrutura de Arquivos
 
-```
-├── client/                 # Frontend React
+```text
+.
+├── client/                 # Aplicação Frontend (React/Vite)
 │   ├── src/
-│   │   ├── pages/          # Páginas da aplicação (inclui nfe-import-page)
-│   │   ├── components/     # Componentes reutilizáveis
-│   │   └── lib/            # Utilitários
-├── server/                 # Backend Express
-│   ├── services/           # Regras de negócio (inclui xmlService)
-│   ├── routes.ts           # Definição da API
-│   └── storage.ts          # Camada de acesso a dados
-├── shared/                 # Código compartilhado
-│   └── schema.ts           # Definição do Banco de Dados (Drizzle)
-├── scripts/                # Scripts de automação
-│   └── seed.ts             # População inicial do banco (Planos, Módulos)
-└── migrations/             # Migrações do banco de dados
+│   │   ├── components/     # UI base (shadcn) e visuais compartilhados
+│   │   ├── lib/            # Helpers e utilitários
+│   │   └── pages/          # Telas (Admin, Produtos, NFe, Emissões, Rastreabilidade)
+├── server/                 # API Backend (Node/Express)
+│   ├── middlewares/        # Proteções (Auth, Tenant Isolado, Uploads)
+│   ├── services/           # Lógica de negócio (Subscrições, XML Parser)
+│   ├── routes.ts           # Definição e agrupamento de todos os endpoints REST
+│   └── storage.ts          # Encapsulamento de regras interativas e consultas SQL
+├── shared/                 # Modelos compartilhados entre Front/Back
+│   └── schema.ts           # Schema relacional extenso (Drizzle/Zod)
+└── scripts/                # Rotinas e automações gerais
+    ├── seed.ts             # Dados iniciais obrigatórios (Root admin, Planos SaaS)
+    └── reset-db.ts         # Auxílio em desenvolvimento para wipe do PostgreSQL
 ```
 
 ## 🛠️ Instalação e Uso
 
 ### Pré-requisitos
-- **Node.js** (v20+)
-- **PostgreSQL** (v12+)
+* **Node.js** (v20 ou superior)
+* **PostgreSQL** (v12 ou superior)
+
+> **Aviso Importante**: O comando `npm install` cuida apenas das dependências do *projeto* (pacotes NPM), não do sistema operacional. Certifique-se de ter os pré-requisitos instalados em sua máquina.
 
 ### Passo a Passo
 
-1.  **Instalar dependências**:
-    ```bash
-    npm install
-    ```
+1. Instale todas as dependências do projeto:
+```bash
+npm install
+```
 
-2.  **Configurar Banco de Dados**:
-    Configure as variáveis de ambiente no arquivo `.env` (copie de `.env.example`).
-    Em seguida, atualize o schema e popule os dados iniciais:
-    ```bash
-    # Cria as tabelas no banco (incluindo as novas tabelas de NFe)
-    npm run db:push
+2. Configure o ambiente de banco de dados:
+   Crie um arquivo `.env` na raiz utilizando o modelo `.env.example`. Preencha a string de conexão na variável `DATABASE_URL`.
 
-    # Popula planos, módulos e usuário admin
-    npm run db:seed
-    ```
+3. Crie e popule o banco de dados:
+```bash
+# Sincroniza as tabelas do projeto com o PostgreSQL local
+npm run db:push
 
-3.  **Iniciar a Aplicação**:
-    ```bash
-    npm run dev
-    ```
-    - **Frontend**: http://localhost:5173
-    - **Backend**: http://localhost:5000
+# Popula usuários administrativos, planos SaaS e módulos
+npm run db:seed
+```
 
-## 🔐 Credenciais Padrão (Desenvolvimento)
+4. Execute os serviços concurrentemente:
+```bash
+npm run dev
+```
+**Importante**: Ao rodar o serviço em ambiente local:
+* O ambiente **Frontend (Vite)** estará na porta **5173** (`http://localhost:5173`)
+* O ambiente **Backend (Node)** estará na porta **5000** (`http://localhost:5000`)
 
-| Usuário | Senha | Perfil |
-| :--- | :--- | :--- |
-| `admin` | `admin123` | Administrador (Plano Completo) |
+## 🔐 Credenciais (Seed)
+
+| Usuário | Senha | Acesso | Ambiente Padrão |
+| :--- | :--- | :--- | :--- |
+| `admin` | `admin123` | Administrador Master | Tenant Ouro de Acesso |
 
 ## 📝 Licença
 
-Este projeto está licenciado sob a licença **MIT**.
+Este projeto é desenvolvido sob os termos da licença **MIT**.

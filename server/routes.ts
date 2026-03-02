@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, isAuthenticatedWithSubscription, isAdmin, isTenantMember } from "./auth";
+import { setupAuth, isAuthenticated, isAuthenticatedWithSubscription, isMasterAdmin, isTenantMember } from "./auth";
 import { z } from "zod";
 import { updateSubscriptionStatus } from "./middlewares/subscription-check";
 import {
@@ -1071,7 +1071,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Tenant routes (for admin)
-  app.get("/api/tenants", isAdmin, async (req, res, next) => {
+  app.get("/api/tenants", isMasterAdmin, async (req, res, next) => {
     try {
       const tenants = await storage.getAllTenants();
       res.json(tenants);
@@ -1105,6 +1105,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         tenantId: tenant.id,
         tenantName: tenant.name,
         planId: tenant.planId,
+        planCode: plan?.code || "A",
         planName: plan?.name || "Desconhecido",
         lastPaymentDate: tenant.lastPaymentDate,
         nextPaymentDate: tenant.nextPaymentDate,
@@ -1117,7 +1118,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     }
   });
 
-  app.post("/api/tenants", isAdmin, async (req, res, next) => {
+  app.post("/api/tenants", isMasterAdmin, async (req, res, next) => {
     try {
       const parsedBody = insertTenantSchema.parse(req.body);
       const tenant = await storage.createTenant(parsedBody);
@@ -1130,7 +1131,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     }
   });
 
-  app.get("/api/tenants/:id", isAdmin, async (req, res, next) => {
+  app.get("/api/tenants/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const tenant = await storage.getTenant(Number(req.params.id));
       if (!tenant) {
@@ -1142,7 +1143,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     }
   });
 
-  app.patch("/api/tenants/:id", isAdmin, async (req, res, next) => {
+  app.patch("/api/tenants/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const tenant = await storage.updateTenant(Number(req.params.id), req.body);
       if (!tenant) {
@@ -1188,8 +1189,8 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       const user = req.user!;
       let users;
 
-      if (user.role === "admin") {
-        // Admin can see all users from any tenant
+      if (user.role === "admin" && user.tenantId === 1) {
+        // Master Admin can see all users from any tenant
         if (req.query.tenantId) {
           users = await storage.getUsersByTenant(Number(req.query.tenantId));
         } else {
@@ -1202,7 +1203,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           }
         }
       } else {
-        // Regular users can only see users from their own tenant
+        // Regular users and tenant admins can only see users from their own tenant
         users = await storage.getUsersByTenant(user.tenantId);
       }
 
@@ -2462,10 +2463,24 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   app.get("/api/traceability/search", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
-      const {
+      let {
         internalLot, supplierLot, productId,
         supplierId, manufacturerId, startDate, endDate
-      } = req.query;
+      } = req.query as Record<string, any>;
+
+      if (internalLot && typeof internalLot === 'string') {
+        try {
+          internalLot = decodeURIComponent(internalLot);
+          if (internalLot.includes('%2F')) internalLot = internalLot.replace(/%2F/g, '/');
+        } catch (e) { }
+      }
+
+      if (supplierLot && typeof supplierLot === 'string') {
+        try {
+          supplierLot = decodeURIComponent(supplierLot);
+          if (supplierLot.includes('%2F')) supplierLot = supplierLot.replace(/%2F/g, '/');
+        } catch (e) { }
+      }
 
       console.log("Busca avançada com filtros:", {
         internalLot, supplierLot, productId,
@@ -2744,154 +2759,6 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     }
   });
 
-  // 4. Busca avançada com filtros
-  app.get("/api/traceability/search", isAuthenticated, async (req, res, next) => {
-    try {
-      const user = req.user!;
-      // Obter e decodificar parâmetros da busca
-      const params = req.query;
-
-      console.log("Busca avançada com filtros:", params);
-
-      // Decodificar os parâmetros de texto que podem conter caracteres especiais
-      // Certificar-se de decodificar corretamente, mesmo se já estiver parcialmente codificado
-      let decodedInternalLot: string | undefined = undefined;
-      if (params.internalLot && typeof params.internalLot === 'string') {
-        try {
-          decodedInternalLot = decodeURIComponent(params.internalLot);
-          // Caso ainda esteja com %2F no lugar de /
-          if (decodedInternalLot.includes('%2F')) {
-            decodedInternalLot = decodedInternalLot.replace(/%2F/g, '/');
-          }
-          console.log("Lote interno decodificado:", decodedInternalLot);
-        } catch (e) {
-          decodedInternalLot = params.internalLot;
-        }
-      }
-
-      let decodedSupplierLot: string | undefined = undefined;
-      if (params.supplierLot && typeof params.supplierLot === 'string') {
-        try {
-          decodedSupplierLot = decodeURIComponent(params.supplierLot);
-          // Caso ainda esteja com %2F no lugar de /
-          if (decodedSupplierLot.includes('%2F')) {
-            decodedSupplierLot = decodedSupplierLot.replace(/%2F/g, '/');
-          }
-          console.log("Lote do fornecedor decodificado:", decodedSupplierLot);
-        } catch (e) {
-          decodedSupplierLot = params.supplierLot;
-        }
-      }
-
-      const productId = params.productId;
-      const supplierId = params.supplierId;
-      const manufacturerId = params.manufacturerId;
-      const startDate = params.startDate;
-      const endDate = params.endDate;
-
-      // Obter todos os certificados do tenant
-      const allCertificates = await storage.getEntryCertificatesByTenant(user.tenantId);
-
-      // Aplicar filtros
-      const filteredCertificates = allCertificates.filter(cert => {
-        let matchesFilters = true;
-
-        if (decodedInternalLot) {
-          matchesFilters = matchesFilters && cert.internalLot.toLowerCase().includes(decodedInternalLot.toLowerCase());
-        }
-
-        if (decodedSupplierLot) {
-          matchesFilters = matchesFilters && cert.supplierLot.toLowerCase().includes(decodedSupplierLot.toLowerCase());
-        }
-
-        if (productId && typeof productId === 'string') {
-          matchesFilters = matchesFilters && cert.productId === parseInt(productId, 10);
-        }
-
-        if (supplierId && typeof supplierId === 'string') {
-          matchesFilters = matchesFilters && cert.supplierId === parseInt(supplierId, 10);
-        }
-
-        if (manufacturerId && typeof manufacturerId === 'string') {
-          matchesFilters = matchesFilters && cert.manufacturerId === parseInt(manufacturerId, 10);
-        }
-
-        if (startDate && typeof startDate === 'string') {
-          const certDate = new Date(cert.createdAt);
-          const filterDate = new Date(startDate);
-          matchesFilters = matchesFilters && certDate >= filterDate;
-        }
-
-        if (endDate && typeof endDate === 'string') {
-          const certDate = new Date(cert.createdAt);
-          const filterDate = new Date(endDate);
-          // Ajusta a data final para o fim do dia (23:59:59)
-          filterDate.setHours(23, 59, 59, 999);
-          matchesFilters = matchesFilters && certDate <= filterDate;
-        }
-
-        return matchesFilters;
-      });
-
-      // Se não encontrou nenhum certificado
-      if (filteredCertificates.length === 0) {
-        return res.status(200).json([]);
-      }
-
-      // Processar detalhes para cada certificado encontrado
-      const detailedCertificates = await Promise.all(filteredCertificates.map(async (entryCertificate) => {
-        // Get all issued certificates for this entry certificate
-        const issuedCertificates = await storage.getIssuedCertificatesByEntryCertificate(
-          entryCertificate.id,
-          user.tenantId
-        );
-
-        // Get related entities
-        const [product, supplier, manufacturer] = await Promise.all([
-          storage.getProduct(entryCertificate.productId, user.tenantId),
-          storage.getSupplier(entryCertificate.supplierId, user.tenantId),
-          storage.getManufacturer(entryCertificate.manufacturerId, user.tenantId)
-        ]);
-
-        // Get client info for issued certificates
-        const enhancedIssuedCertificates = await Promise.all(issuedCertificates.map(async cert => {
-          const client = await storage.getClient(cert.clientId, user.tenantId);
-          return {
-            ...cert,
-            clientName: client?.name
-          };
-        }));
-
-        // Calculate remaining quantity
-        const receivedQuantity = Number(entryCertificate.receivedQuantity);
-        const soldQuantity = enhancedIssuedCertificates.reduce(
-          (sum, cert) => sum + Number(cert.soldQuantity),
-          0
-        );
-        const remainingQuantity = receivedQuantity - soldQuantity;
-
-        return {
-          entryCertificate: {
-            ...entryCertificate,
-            productName: product?.technicalName,
-            supplierName: supplier?.name,
-            manufacturerName: manufacturer?.name
-          },
-          issuedCertificates: enhancedIssuedCertificates,
-          summary: {
-            receivedQuantity,
-            soldQuantity,
-            remainingQuantity,
-            measureUnit: entryCertificate.measureUnit
-          }
-        };
-      }));
-
-      res.json(detailedCertificates);
-    } catch (error) {
-      next(error);
-    }
-  });
 
   // Package Types routes
   app.get("/api/package-types", isAuthenticated, async (req, res, next) => {
@@ -3266,7 +3133,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
 
   // Rotas administrativas
   // Dashboard administrativo
-  app.get("/api/admin/dashboard", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/dashboard", isMasterAdmin, async (req, res, next) => {
     try {
       // Obter contagem de tenants
       const tenants = await storage.getAllTenants();
@@ -3364,7 +3231,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Listar todos os tenants para o admin
-  app.get("/api/admin/tenants", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/tenants", isMasterAdmin, async (req, res, next) => {
     try {
       let tenants = await storage.getAllTenants();
       const files = await storage.getAllFiles();
@@ -3393,7 +3260,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Criar tenant (admin)
-  app.post("/api/admin/tenants", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/tenants", isMasterAdmin, async (req, res, next) => {
     try {
       const parsedBody = insertTenantSchema.parse(req.body);
       const tenant = await storage.createTenant(parsedBody);
@@ -3407,7 +3274,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Atualizar tenant (admin)
-  app.patch("/api/admin/tenants/:id", isAdmin, async (req, res, next) => {
+  app.patch("/api/admin/tenants/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const tenant = await storage.updateTenant(Number(req.params.id), req.body);
       if (!tenant) {
@@ -3420,7 +3287,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Excluir tenant (admin)
-  app.delete("/api/admin/tenants/:id", isAdmin, async (req, res, next) => {
+  app.delete("/api/admin/tenants/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const success = await storage.deleteTenant(Number(req.params.id));
       if (!success) {
@@ -3435,7 +3302,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   // Rotas para gerenciamento de assinaturas de tenants
 
   // Obter status de assinatura de um tenant
-  app.get("/api/admin/tenants/:id/subscription", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/tenants/:id/subscription", isMasterAdmin, async (req, res, next) => {
     try {
       const tenant = await storage.getTenant(Number(req.params.id));
       if (!tenant) {
@@ -3462,7 +3329,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Renovar assinatura de tenant
-  app.post("/api/admin/tenants/:id/renew-subscription", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/tenants/:id/renew-subscription", isMasterAdmin, async (req, res, next) => {
     try {
       // Garantir que o ID seja sempre um número válido
       const idParam = req.params.id;
@@ -3510,7 +3377,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Bloquear tenant (alterar status para overdue)
-  app.post("/api/admin/tenants/:id/block", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/tenants/:id/block", isMasterAdmin, async (req, res, next) => {
     try {
       const tenantId = Number(req.params.id);
       const tenant = await storage.getTenant(tenantId);
@@ -3538,7 +3405,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Desbloquear tenant
-  app.post("/api/admin/tenants/:id/unblock", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/tenants/:id/unblock", isMasterAdmin, async (req, res, next) => {
     try {
       const tenantId = Number(req.params.id);
       const tenant = await storage.getTenant(tenantId);
@@ -3566,7 +3433,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Gerenciamento de planos
-  app.get("/api/admin/plans", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/plans", isMasterAdmin, async (req, res, next) => {
     try {
       const plans = await storage.getPlans();
       res.json(plans);
@@ -3576,7 +3443,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Criar plano
-  app.post("/api/admin/plans", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/plans", isMasterAdmin, async (req, res, next) => {
     try {
       // Validar que todos os campos obrigatórios estão presentes
       const { name, code, description, maxStorage, maxFileSize, price } = req.body;
@@ -3613,7 +3480,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Atualizar plano (PATCH - parcial)
-  app.patch("/api/admin/plans/:id", isAdmin, async (req, res, next) => {
+  app.patch("/api/admin/plans/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const plan = await storage.updatePlan(Number(req.params.id), req.body);
       if (!plan) {
@@ -3626,7 +3493,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Atualizar plano (PUT - completo)
-  app.put("/api/admin/plans/:id", isAdmin, async (req, res, next) => {
+  app.put("/api/admin/plans/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const id = Number(req.params.id);
 
@@ -3655,7 +3522,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Excluir plano
-  app.delete("/api/admin/plans/:id", isAdmin, async (req, res, next) => {
+  app.delete("/api/admin/plans/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const success = await storage.deletePlan(Number(req.params.id));
       if (!success) {
@@ -3668,7 +3535,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Módulos disponíveis
-  app.get("/api/admin/modules", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/modules", isMasterAdmin, async (req, res, next) => {
     try {
       const modules = await storage.getModules();
       res.json(modules);
@@ -3678,7 +3545,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Criar novo módulo
-  app.post("/api/admin/modules", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/modules", isMasterAdmin, async (req, res, next) => {
     try {
       const newModule = await storage.createModule(req.body);
       res.status(201).json(newModule);
@@ -3689,7 +3556,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Atualizar módulo
-  app.put("/api/admin/modules/:id", isAdmin, async (req, res, next) => {
+  app.put("/api/admin/modules/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const updatedModule = await storage.updateModule(Number(req.params.id), req.body);
       if (!updatedModule) {
@@ -3703,7 +3570,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Excluir módulo
-  app.delete("/api/admin/modules/:id", isAdmin, async (req, res, next) => {
+  app.delete("/api/admin/modules/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const success = await storage.deleteModule(Number(req.params.id));
       if (!success) {
@@ -3719,7 +3586,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   // Rotas para gerenciamento de funcionalidades de módulos
 
   // Obter todas as funcionalidades
-  app.get("/api/admin/module-features", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/module-features", isMasterAdmin, async (req, res, next) => {
     try {
       const features = await storage.getModuleFeatures();
       res.json(features);
@@ -3730,7 +3597,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Obter funcionalidades por módulo
-  app.get("/api/admin/modules/:id/features", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/modules/:id/features", isMasterAdmin, async (req, res, next) => {
     try {
       const moduleId = Number(req.params.id);
       const features = await storage.getModuleFeaturesByModule(moduleId);
@@ -3742,7 +3609,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Obter uma funcionalidade específica
-  app.get("/api/admin/module-features/:id", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/module-features/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const featureId = Number(req.params.id);
       const feature = await storage.getModuleFeature(featureId);
@@ -3759,7 +3626,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Criar uma nova funcionalidade
-  app.post("/api/admin/module-features", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/module-features", isMasterAdmin, async (req, res, next) => {
     try {
       const newFeature = await storage.createModuleFeature(req.body);
       res.status(201).json(newFeature);
@@ -3770,7 +3637,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Atualizar uma funcionalidade
-  app.put("/api/admin/module-features/:id", isAdmin, async (req, res, next) => {
+  app.put("/api/admin/module-features/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const featureId = Number(req.params.id);
       const updatedFeature = await storage.updateModuleFeature(featureId, req.body);
@@ -3787,7 +3654,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Excluir uma funcionalidade
-  app.delete("/api/admin/module-features/:id", isAdmin, async (req, res, next) => {
+  app.delete("/api/admin/module-features/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const featureId = Number(req.params.id);
       const success = await storage.deleteModuleFeature(featureId);
@@ -3822,7 +3689,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Obter módulos de um plano
-  app.get("/api/admin/plans/:id/modules", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/plans/:id/modules", isMasterAdmin, async (req, res, next) => {
     try {
       const planId = Number(req.params.id);
 
@@ -3852,7 +3719,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Atualizar módulos de um plano
-  app.put("/api/admin/plans/:id/modules", isAdmin, async (req, res, next) => {
+  app.put("/api/admin/plans/:id/modules", isMasterAdmin, async (req, res, next) => {
     try {
       const planId = Number(req.params.id);
       const { moduleIds } = req.body;
@@ -3874,7 +3741,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Gerenciamento de armazenamento
-  app.get("/api/admin/storage", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/storage", isMasterAdmin, async (req, res, next) => {
     try {
       const tenants = await storage.getAllTenants();
       const files = await storage.getAllFiles();
@@ -3903,7 +3770,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Limpar arquivos não utilizados de um tenant
-  app.post("/api/admin/storage/:tenantId/cleanup", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/storage/:tenantId/cleanup", isMasterAdmin, async (req, res, next) => {
     try {
       const tenantId = Number(req.params.tenantId);
 
@@ -3939,7 +3806,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Usuários administrativos
-  app.get("/api/admin/users", isAdmin, async (req, res, next) => {
+  app.get("/api/admin/users", isMasterAdmin, async (req, res, next) => {
     try {
       const tenants = await storage.getAllTenants();
       let allUsers = [];
@@ -3960,7 +3827,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Atualizar usuário administrativo
-  app.put("/api/admin/users/:id", isAdmin, async (req, res, next) => {
+  app.put("/api/admin/users/:id", isMasterAdmin, async (req, res, next) => {
     try {
       const userId = Number(req.params.id);
       const { username, name, email, password, role, active } = req.body;
@@ -4003,7 +3870,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Criar novo usuário (admin)
-  app.post("/api/admin/users", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/users", isMasterAdmin, async (req, res, next) => {
     try {
       const { username, name, password, role, tenantId, active } = req.body;
 
@@ -4141,7 +4008,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   });
 
   // Mock Data Management
-  app.post("/api/admin/mock-data", isAdmin, async (req, res, next) => {
+  app.post("/api/admin/mock-data", isMasterAdmin, async (req, res, next) => {
     try {
       const { generateMockData } = await import("./services/mock-data");
       const result = await generateMockData();
@@ -4151,7 +4018,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
     }
   });
 
-  app.delete("/api/admin/mock-data", isAdmin, async (req, res, next) => {
+  app.delete("/api/admin/mock-data", isMasterAdmin, async (req, res, next) => {
     try {
       const { clearMockData } = await import("./services/mock-data");
       const result = await clearMockData();

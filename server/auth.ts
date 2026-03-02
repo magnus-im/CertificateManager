@@ -11,7 +11,7 @@ import { checkSubscription } from "./middlewares/subscription-check";
 
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    interface User extends SelectUser { }
   }
 }
 
@@ -67,7 +67,7 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
-  
+
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
@@ -82,7 +82,7 @@ export function setupAuth(app: Express) {
     try {
       // Validate request body against schema
       const parsedBody = insertUserSchema.parse(req.body);
-      
+
       // Check if username already exists
       const existingUser = await storage.getUserByUsername(parsedBody.username);
       if (existingUser) {
@@ -116,21 +116,21 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", async (err: Error, user: SelectUser, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "Invalid credentials" });
-      
+
       req.login(user, async (err) => {
         if (err) return next(err);
-        
+
         // Verificar status da assinatura do tenant
         let tenantStatus = null;
         let adminContact = null;
-        
+
         if (user.tenantId && user.role !== 'admin') {
           const tenant = await storage.getTenant(user.tenantId);
-          
+
           if (tenant && tenant.paymentStatus === 'overdue') {
             // Quando a assinatura está vencida, buscar informações de contato do admin
             const adminTenant = await storage.getTenant(1); // ID 1 é o tenant admin
-            
+
             tenantStatus = {
               status: 'overdue',
               message: 'Assinatura vencida. Algumas funcionalidades estarão bloqueadas.',
@@ -147,7 +147,7 @@ export function setupAuth(app: Express) {
             };
           }
         }
-        
+
         // Omit password from response
         const { password, ...userWithoutPassword } = user;
         return res.status(200).json({
@@ -192,12 +192,25 @@ export function isAuthenticatedWithSubscription(req: Request, res: Response, nex
   res.status(401).json({ message: "Unauthorized" });
 }
 
-// Middleware to check if user is admin
+// Middleware to check if user is admin (qualquer admin)
 export function isAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated() && req.user && (req.user as SelectUser).role === "admin") {
     return next();
   }
   res.status(403).json({ message: "Forbidden" });
+}
+
+// Middleware to check if user is the master admin (admin do tenant 1)
+export function isMasterAdmin(req: Request, res: Response, next: NextFunction) {
+  if (
+    req.isAuthenticated() &&
+    req.user &&
+    (req.user as SelectUser).role === "admin" &&
+    (req.user as SelectUser).tenantId === 1
+  ) {
+    return next();
+  }
+  res.status(403).json({ message: "Forbidden: Master Admin Only" });
 }
 
 // Middleware to check if user belongs to tenant

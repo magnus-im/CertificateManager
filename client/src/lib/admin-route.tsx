@@ -21,8 +21,8 @@ export function AdminRoute({
     );
   }
 
-  // Verifica se o usuário está autenticado e se é um administrador
-  if (!user || user.role !== "admin") {
+  // Verifica se o usuário está autenticado e se é um administrador do tenant 1 (Master Admin)
+  if (!user || user.role !== "admin" || user.tenantId !== 1) {
     return (
       <Route path={path}>
         <Redirect to="/" />

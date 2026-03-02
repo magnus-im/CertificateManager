@@ -8,13 +8,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate, formatNumber } from "@/lib/utils";
-import { 
-  Loader2, 
-  Search, 
-  ClipboardList, 
-  ArrowDownUp, 
-  Package, 
-  Building2, 
+import {
+  Loader2,
+  Search,
+  ClipboardList,
+  ArrowDownUp,
+  Package,
+  Building2,
   Factory,
   Layers,
   Calendar,
@@ -67,7 +67,8 @@ type TraceabilityResult = {
 // Interfaces para os dados de filtro
 interface Product {
   id: number;
-  name: string;
+  technicalName: string;
+  commercialName: string;
 }
 
 interface Supplier {
@@ -96,18 +97,18 @@ export default function TraceabilityPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [traceabilityResult, setTraceabilityResult] = useState<TraceabilityResult | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-  
+
   // Estados para os dados dos filtros
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
-  
+
   // Estado para os filtros aplicados
   const [filters, setFilters] = useState<FilterOptions>({});
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
-  
+
   // Carregar opções de filtro ao montar o componente
   useEffect(() => {
     const loadFilterOptions = async () => {
@@ -117,12 +118,12 @@ export default function TraceabilityPage() {
         const productsResponse = await apiRequest("GET", "/api/products", undefined);
         const productsData = await productsResponse.json();
         setProducts(productsData);
-        
+
         // Carregar fornecedores
         const suppliersResponse = await apiRequest("GET", "/api/suppliers", undefined);
         const suppliersData = await suppliersResponse.json();
         setSuppliers(suppliersData);
-        
+
         // Carregar fabricantes
         const manufacturersResponse = await apiRequest("GET", "/api/manufacturers", undefined);
         const manufacturersData = await manufacturersResponse.json();
@@ -133,18 +134,18 @@ export default function TraceabilityPage() {
         setIsLoadingOptions(false);
       }
     };
-    
+
     loadFilterOptions();
   }, []);
-  
+
   // Atualizar contagem de filtros ativos quando os filtros mudam
   useEffect(() => {
-    const count = Object.values(filters).filter(value => 
+    const count = Object.values(filters).filter(value =>
       value !== undefined && value !== "" && value !== null
     ).length;
     setActiveFiltersCount(count);
   }, [filters]);
-  
+
   // Função para atualizar um filtro específico
   const updateFilter = (key: keyof FilterOptions, value: any) => {
     setFilters(prev => ({
@@ -152,7 +153,7 @@ export default function TraceabilityPage() {
       [key]: value === "" ? undefined : value
     }));
   };
-  
+
   // Função para limpar todos os filtros
   const clearFilters = () => {
     setFilters({});
@@ -165,29 +166,29 @@ export default function TraceabilityPage() {
     if (!showAdvancedFilters && supplierLot.trim()) {
       // No filtro simples, vamos usar uma abordagem mais direta para evitar problemas de codificação
       // Faz uma busca direta na URL usando o valor do lote interno (mais específico)
-      
+
       const searchValue = supplierLot.trim();
-      
+
       // Vamos tentar ver se há uma barra no valor - se houver, é provavelmente um lote interno
       if (searchValue.includes('/')) {
         // Vamos substituir a barra pelo código %2F que é usado na URL
         // Mas não vamos usar encodeURIComponent para evitar a dupla codificação
         const encodedValue = searchValue.replace(/\//g, '%2F');
-        
+
         // URL para busca específica por lote interno
         return `/api/traceability/search?internalLot=${encodedValue}`;
-      } 
-      
+      }
+
       // Se não tem barra, pode ser um lote de fornecedor ou parte de um lote interno
       // Vamos buscar nos dois campos
-      
+
       // Usando os parâmetros de busca para evitar problemas com rotas
       return `/api/traceability/search?internalLot=${searchValue}&supplierLot=${searchValue}`;
     }
-    
+
     // Construir os parâmetros de consulta para filtros avançados
     const queryParams = new URLSearchParams();
-    
+
     // Para o lote interno, fazer uma codificação especial se tiver barra
     if (filters.internalLot) {
       if (filters.internalLot.includes('/')) {
@@ -198,7 +199,7 @@ export default function TraceabilityPage() {
         queryParams.append('internalLot', filters.internalLot);
       }
     }
-    
+
     // Mesmo para lote de fornecedor
     if (filters.supplierLot) {
       if (filters.supplierLot.includes('/')) {
@@ -208,25 +209,25 @@ export default function TraceabilityPage() {
         queryParams.append('supplierLot', filters.supplierLot);
       }
     }
-    
+
     if (filters.productId) queryParams.append('productId', filters.productId.toString());
     if (filters.supplierId) queryParams.append('supplierId', filters.supplierId.toString());
     if (filters.manufacturerId) queryParams.append('manufacturerId', filters.manufacturerId.toString());
     if (filters.startDate) queryParams.append('startDate', filters.startDate);
     if (filters.endDate) queryParams.append('endDate', filters.endDate);
-    
+
     return `/api/traceability/search?${queryParams.toString()}`;
   };
-  
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validar se pelo menos um filtro foi preenchido
     const hasSimpleFilter = !showAdvancedFilters && supplierLot.trim();
-    const hasAdvancedFilter = showAdvancedFilters && Object.values(filters).some(val => 
+    const hasAdvancedFilter = showAdvancedFilters && Object.values(filters).some(val =>
       val !== undefined && val !== '' && val !== null
     );
-    
+
     if (!hasSimpleFilter && !hasAdvancedFilter) {
       toast({
         title: "Filtros vazios",
@@ -235,26 +236,26 @@ export default function TraceabilityPage() {
       });
       return;
     }
-    
+
     setIsLoading(true);
     setHasSearched(true);
-    
+
     try {
       const searchUrl = buildSearchUrl();
       console.log("URL de busca:", searchUrl);
-      
+
       const response = await apiRequest("GET", searchUrl, undefined);
-      
+
       // Verificar se a resposta é JSON válido antes de tentar parse
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         console.error("Resposta não é JSON:", await response.text());
         throw new Error("Resposta inválida do servidor. Por favor, tente novamente.");
       }
-      
+
       const data = await response.json();
       console.log("Dados recebidos:", data);
-      
+
       if (Array.isArray(data) && data.length === 0) {
         toast({
           title: "Nenhum resultado",
@@ -266,7 +267,7 @@ export default function TraceabilityPage() {
         // Se retornou uma lista, exibir apenas o primeiro resultado
         // ou implementar uma interface para selecionar qual exibir
         setTraceabilityResult(data[0]);
-        
+
         if (data.length > 1) {
           toast({
             title: "Múltiplos resultados",
@@ -296,14 +297,14 @@ export default function TraceabilityPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-medium">Rastreabilidade de Lotes</h1>
         </div>
-        
+
         <Card className="mb-6">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle>Consultar Lote</CardTitle>
             <div className="flex items-center gap-2">
-              <Button 
-                variant={showAdvancedFilters ? "default" : "outline"} 
-                size="sm" 
+              <Button
+                variant={showAdvancedFilters ? "default" : "outline"}
+                size="sm"
                 className="h-8"
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               >
@@ -315,11 +316,11 @@ export default function TraceabilityPage() {
                   </Badge>
                 )}
               </Button>
-              
+
               {activeFiltersCount > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="h-8 text-gray-500"
                   onClick={clearFilters}
                 >
@@ -337,8 +338,8 @@ export default function TraceabilityPage() {
                   <div className="flex space-x-2">
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input 
-                        placeholder="Digite o número do lote (interno ou do fornecedor)..." 
+                      <Input
+                        placeholder="Digite o número do lote (interno ou do fornecedor)..."
                         className="pl-10"
                         value={supplierLot}
                         onChange={(e) => setSupplierLot(e.target.value)}
@@ -376,7 +377,7 @@ export default function TraceabilityPage() {
                         onChange={(e) => updateFilter("internalLot", e.target.value)}
                       />
                     </div>
-                    
+
                     {/* Lote do Fornecedor */}
                     <div className="space-y-2">
                       <Label htmlFor="supplierLot">Lote do Fornecedor</Label>
@@ -387,7 +388,7 @@ export default function TraceabilityPage() {
                         onChange={(e) => updateFilter("supplierLot", e.target.value)}
                       />
                     </div>
-                    
+
                     {/* Produto */}
                     <div className="space-y-2">
                       <Label htmlFor="productId">Produto</Label>
@@ -401,13 +402,13 @@ export default function TraceabilityPage() {
                         <SelectContent>
                           {products.map((product) => (
                             <SelectItem key={product.id} value={product.id.toString()}>
-                              {product.name}
+                              {product.commercialName || product.technicalName}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     {/* Fornecedor */}
                     <div className="space-y-2">
                       <Label htmlFor="supplierId">Fornecedor</Label>
@@ -427,7 +428,7 @@ export default function TraceabilityPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     {/* Fabricante */}
                     <div className="space-y-2">
                       <Label htmlFor="manufacturerId">Fabricante</Label>
@@ -447,7 +448,7 @@ export default function TraceabilityPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     {/* Data inicial */}
                     <div className="space-y-2">
                       <Label htmlFor="startDate">Data Inicial</Label>
@@ -458,7 +459,7 @@ export default function TraceabilityPage() {
                         onChange={(e) => updateFilter("startDate", e.target.value)}
                       />
                     </div>
-                    
+
                     {/* Data final */}
                     <div className="space-y-2">
                       <Label htmlFor="endDate">Data Final</Label>
@@ -470,7 +471,7 @@ export default function TraceabilityPage() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end space-x-2 mt-4">
                     <Button
                       type="button"
@@ -479,8 +480,8 @@ export default function TraceabilityPage() {
                     >
                       Limpar Filtros
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -498,16 +499,16 @@ export default function TraceabilityPage() {
                   </div>
                 </div>
               )}
-              
+
               {/* Lista de filtros ativos, visível apenas quando temos filtros e o painel avançado não está aberto */}
               {activeFiltersCount > 0 && !showAdvancedFilters && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {filters.internalLot && (
                     <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center">
                       Lote Interno: {filters.internalLot}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-4 w-4 p-0 ml-1"
                         onClick={() => updateFilter("internalLot", undefined)}
                       >
@@ -518,9 +519,9 @@ export default function TraceabilityPage() {
                   {filters.supplierLot && (
                     <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center">
                       Lote Fornecedor: {filters.supplierLot}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-4 w-4 p-0 ml-1"
                         onClick={() => updateFilter("supplierLot", undefined)}
                       >
@@ -530,10 +531,13 @@ export default function TraceabilityPage() {
                   )}
                   {filters.productId && (
                     <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center">
-                      Produto: {products.find(p => p.id === filters.productId)?.name}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      Produto: {(() => {
+                        const p = products.find(p => p.id === filters.productId);
+                        return p ? (p.commercialName || p.technicalName) : '';
+                      })()}
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-4 w-4 p-0 ml-1"
                         onClick={() => updateFilter("productId", undefined)}
                       >
@@ -544,9 +548,9 @@ export default function TraceabilityPage() {
                   {filters.supplierId && (
                     <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center">
                       Fornecedor: {suppliers.find(s => s.id === filters.supplierId)?.name}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-4 w-4 p-0 ml-1"
                         onClick={() => updateFilter("supplierId", undefined)}
                       >
@@ -557,9 +561,9 @@ export default function TraceabilityPage() {
                   {filters.manufacturerId && (
                     <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center">
                       Fabricante: {manufacturers.find(m => m.id === filters.manufacturerId)?.name}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-4 w-4 p-0 ml-1"
                         onClick={() => updateFilter("manufacturerId", undefined)}
                       >
@@ -570,9 +574,9 @@ export default function TraceabilityPage() {
                   {filters.startDate && (
                     <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center">
                       De: {filters.startDate}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-4 w-4 p-0 ml-1"
                         onClick={() => updateFilter("startDate", undefined)}
                       >
@@ -583,9 +587,9 @@ export default function TraceabilityPage() {
                   {filters.endDate && (
                     <Badge variant="secondary" className="pl-2 pr-1 py-1 flex items-center">
                       Até: {filters.endDate}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-4 w-4 p-0 ml-1"
                         onClick={() => updateFilter("endDate", undefined)}
                       >
@@ -598,7 +602,7 @@ export default function TraceabilityPage() {
             </form>
           </CardContent>
         </Card>
-        
+
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -623,14 +627,14 @@ export default function TraceabilityPage() {
                         </h3>
                         <p className="text-base font-medium">{traceabilityResult.entryCertificate.productName}</p>
                       </div>
-                      
+
                       <div>
                         <h3 className="text-sm font-medium text-gray-500 flex items-center">
                           <Building2 className="h-4 w-4 mr-1" /> Fornecedor
                         </h3>
                         <p className="text-base">{traceabilityResult.entryCertificate.supplierName}</p>
                       </div>
-                      
+
                       <div>
                         <h3 className="text-sm font-medium text-gray-500 flex items-center">
                           <Factory className="h-4 w-4 mr-1" /> Fabricante
@@ -638,7 +642,7 @@ export default function TraceabilityPage() {
                         <p className="text-base">{traceabilityResult.entryCertificate.manufacturerName}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-4">
                       <div>
                         <h3 className="text-sm font-medium text-gray-500 flex items-center">
@@ -646,14 +650,14 @@ export default function TraceabilityPage() {
                         </h3>
                         <p className="text-base">{traceabilityResult.entryCertificate.internalLot}</p>
                       </div>
-                      
+
                       <div>
                         <h3 className="text-sm font-medium text-gray-500 flex items-center">
                           <FileText className="h-4 w-4 mr-1" /> Documento Referência
                         </h3>
                         <p className="text-base">{traceabilityResult.entryCertificate.referenceDocument}</p>
                       </div>
-                      
+
                       <div>
                         <h3 className="text-sm font-medium text-gray-500 flex items-center">
                           <Calendar className="h-4 w-4 mr-1" /> Data de Entrada
@@ -661,7 +665,7 @@ export default function TraceabilityPage() {
                         <p className="text-base">{formatDate(traceabilityResult.entryCertificate.entryDate)}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-4">
                       <div>
                         <h3 className="text-sm font-medium text-gray-500 flex items-center">
@@ -671,14 +675,14 @@ export default function TraceabilityPage() {
                           {formatNumber(traceabilityResult.entryCertificate.receivedQuantity)} {traceabilityResult.entryCertificate.measureUnit}
                         </p>
                       </div>
-                      
+
                       <div>
                         <h3 className="text-sm font-medium text-gray-500 flex items-center">
                           <Calendar className="h-4 w-4 mr-1" /> Validade
                         </h3>
                         <p className="text-base">{formatDate(traceabilityResult.entryCertificate.expirationDate)}</p>
                       </div>
-                      
+
                       <div>
                         <h3 className="text-sm font-medium text-gray-500 flex items-center">
                           <Scale className="h-4 w-4 mr-1" /> Saldo Atual
@@ -691,7 +695,7 @@ export default function TraceabilityPage() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Summary Card */}
               <Card>
                 <CardHeader>
@@ -708,14 +712,14 @@ export default function TraceabilityPage() {
                         {formatNumber(traceabilityResult.summary.receivedQuantity)} {traceabilityResult.summary.measureUnit}
                       </p>
                     </div>
-                    
+
                     <div className="bg-green-50 p-4 rounded-lg">
                       <h3 className="text-sm font-medium text-green-700">Quantidade Vendida</h3>
                       <p className="text-2xl font-bold text-green-700">
                         {formatNumber(traceabilityResult.summary.soldQuantity)} {traceabilityResult.summary.measureUnit}
                       </p>
                     </div>
-                    
+
                     <div className="bg-amber-50 p-4 rounded-lg">
                       <h3 className="text-sm font-medium text-amber-700">Saldo Disponível</h3>
                       <p className="text-2xl font-bold text-amber-700">
@@ -725,7 +729,7 @@ export default function TraceabilityPage() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Issued Certificates */}
               <Card>
                 <CardHeader>

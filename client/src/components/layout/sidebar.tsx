@@ -156,7 +156,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           Configurações
         </SidebarItem>
 
-        {user?.role === "admin" && (
+        {user?.role === "admin" && user?.tenantId === 1 && (
           <div className="mt-4">
             <div className="px-3 py-1 text-xs font-semibold text-red-400 uppercase tracking-wider">
               Administração

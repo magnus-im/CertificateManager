@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Upload, FileText, LinkIcon, Search, Trash2, Unlink, FileOutput, Eye } from "lucide-react";
+import { Loader2, Upload, FileText, LinkIcon, Search, Trash2, Unlink, FileOutput, Eye, Check, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { Product } from "@shared/schema";
 import { IssueCertificateForm } from "@/components/certificates/issue-certificate-form";
@@ -104,6 +106,7 @@ export default function NfeImportPage() {
     const [selectedLotId, setSelectedLotId] = useState<number | null>(null); // Selected entry certificate for issuance
     const [selectedProductId, setSelectedProductId] = useState<string>("");
     const [productSearch, setProductSearch] = useState("");
+    const [comboboxOpen, setComboboxOpen] = useState(false);
 
     // Fetch Queue
     const { data: queue, isLoading: isLoadingQueue } = useQuery<IssuanceQueueItem[]>({
@@ -416,33 +419,57 @@ export default function NfeImportPage() {
 
                                 <div className="space-y-2">
                                     <h4 className="font-medium leading-none">Produto Interno Correspondente</h4>
-                                    <div className="flex items-center space-x-2 mb-2">
-                                        <Search className="w-4 h-4 opacity-50" />
-                                        <Input
-                                            placeholder="Buscar produto..."
-                                            value={productSearch}
-                                            onChange={(e) => setProductSearch(e.target.value)}
-                                            className="h-8"
-                                        />
-                                    </div>
-                                    <Select onValueChange={setSelectedProductId} value={selectedProductId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Selecione um produto..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {isLoadingProducts ? (
-                                                <div className="p-2 flex justify-center"><Loader2 className="h-4 w-4 animate-spin" /></div>
-                                            ) : filteredProducts.length === 0 ? (
-                                                <div className="p-2 text-sm text-muted-foreground text-center">Nenhum produto encontrado.</div>
-                                            ) : (
-                                                filteredProducts.slice(0, 50).map((product) => (
-                                                    <SelectItem key={product.id} value={product.id.toString()}>
-                                                        {product.technicalName} ({product.internalCode || 'S/ Cód'})
-                                                    </SelectItem>
-                                                ))
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={comboboxOpen}
+                                                className="w-full justify-between font-normal"
+                                            >
+                                                {selectedProductId
+                                                    ? products?.find((product) => product.id.toString() === selectedProductId)?.technicalName || "Produto selecionado"
+                                                    : "Buscar e selecionar produto..."}
+                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[460px] p-0" align="start">
+                                            <Command shouldFilter={false}>
+                                                <CommandInput
+                                                    placeholder="Buscar produto por nome ou código..."
+                                                    value={productSearch}
+                                                    onValueChange={setProductSearch}
+                                                />
+                                                <CommandList>
+                                                    <CommandEmpty>
+                                                        {isLoadingProducts ? (
+                                                            <div className="flex justify-center p-4"><Loader2 className="h-4 w-4 animate-spin" /></div>
+                                                        ) : "Nenhum produto encontrado."}
+                                                    </CommandEmpty>
+                                                    <CommandGroup>
+                                                        {filteredProducts.slice(0, 50).map((product) => (
+                                                            <CommandItem
+                                                                key={product.id}
+                                                                value={product.id.toString()}
+                                                                onSelect={() => {
+                                                                    setSelectedProductId(product.id.toString());
+                                                                    setComboboxOpen(false);
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        selectedProductId === product.id.toString() ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {product.technicalName} ({product.internalCode || 'S/ Cód'})
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                     <p className="text-[0.8rem] text-muted-foreground">
                                         Este vínculo será salvo para futuras importações deste emitente e produto.
                                     </p>

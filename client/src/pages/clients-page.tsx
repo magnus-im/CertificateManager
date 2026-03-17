@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, Users, Pencil, Search, Trash2, Plus } from "lucide-react";
 import { insertClientSchema, Client } from "@shared/schema";
+import { COUNTRIES, getCountryByCode, getTaxIdLabel, getTaxIdPlaceholder, formatTaxId } from "@shared/countries";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -30,29 +32,33 @@ export default function ClientsPage() {
   const filteredClients = clients
     ? clients.filter(client =>
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.cnpj.includes(searchQuery) ||
+      (client.taxId && client.taxId.includes(searchQuery)) ||
       (client.internalCode && client.internalCode.toLowerCase().includes(searchQuery.toLowerCase()))
     )
     : [];
 
   // Form for adding/editing clients
-  const form = useForm<Omit<Client, "id" | "tenantId">>({
+  const form = useForm({
     resolver: zodResolver(insertClientSchema.omit({ tenantId: true })),
     defaultValues: {
       name: "",
-      cnpj: "",
+      country: "BR",
+      taxId: "",
       phone: "",
       address: "",
       internalCode: "",
     },
   });
 
+  const selectedCountry = form.watch("country");
+
   // Set form values when editing
   const handleEdit = (client: Client) => {
     setEditingClient(client);
     form.reset({
       name: client.name,
-      cnpj: client.cnpj,
+      country: client.country || "BR",
+      taxId: client.taxId || "",
       phone: client.phone || "",
       address: client.address || "",
       internalCode: client.internalCode || "",
@@ -65,7 +71,8 @@ export default function ClientsPage() {
     setEditingClient(null);
     form.reset({
       name: "",
-      cnpj: "",
+      country: "BR",
+      taxId: "",
       phone: "",
       address: "",
       internalCode: "",
@@ -75,13 +82,12 @@ export default function ClientsPage() {
 
   // Mutation for adding/editing client
   const clientMutation = useMutation({
-    mutationFn: async (data: Omit<Client, "id" | "tenantId">) => {
+    mutationFn: async (data: any) => {
+      const payload = { ...data, taxId: data.taxId?.trim() || null };
       if (editingClient) {
-        // Update existing client
-        await apiRequest("PATCH", `/api/clients/${editingClient.id}`, data);
+        await apiRequest("PATCH", `/api/clients/${editingClient.id}`, payload);
       } else {
-        // Create new client
-        await apiRequest("POST", "/api/clients", data);
+        await apiRequest("POST", "/api/clients", payload);
       }
     },
     onSuccess: () => {
@@ -130,8 +136,13 @@ export default function ClientsPage() {
     }
   };
 
-  const onSubmit = (data: Omit<Client, "id" | "tenantId">) => {
+  const onSubmit = (data: any) => {
     clientMutation.mutate(data);
+  };
+
+  const renderCountryFlag = (countryCode: string) => {
+    const country = getCountryByCode(countryCode);
+    return country ? `${country.flag} ${country.name}` : countryCode;
   };
 
   return (
@@ -156,7 +167,7 @@ export default function ClientsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Buscar por nome, CNPJ ou código interno..."
+                placeholder="Buscar por nome, ID fiscal ou código interno..."
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -177,7 +188,8 @@ export default function ClientsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[200px]">Nome</TableHead>
-                      <TableHead>CNPJ</TableHead>
+                      <TableHead>País</TableHead>
+                      <TableHead>ID Fiscal</TableHead>
                       <TableHead>Telefone</TableHead>
                       <TableHead>Endereço</TableHead>
                       <TableHead>Código Interno</TableHead>
@@ -187,7 +199,7 @@ export default function ClientsPage() {
                   <TableBody>
                     {filteredClients.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                           <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                           {searchQuery
                             ? "Nenhum cliente encontrado com os critérios de busca"
@@ -198,7 +210,10 @@ export default function ClientsPage() {
                       filteredClients.map((client) => (
                         <TableRow key={client.id}>
                           <TableCell className="font-medium">{client.name}</TableCell>
-                          <TableCell>{client.cnpj}</TableCell>
+                          <TableCell>
+                            <span className="whitespace-nowrap">{renderCountryFlag(client.country)}</span>
+                          </TableCell>
+                          <TableCell>{client.taxId || "-"}</TableCell>
                           <TableCell>{client.phone || "-"}</TableCell>
                           <TableCell>{client.address || "-"}</TableCell>
                           <TableCell>{client.internalCode || "-"}</TableCell>
@@ -255,19 +270,54 @@ export default function ClientsPage() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="cnpj"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CNPJ *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="00.000.000/0000-00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>País *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o país" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[300px]">
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country.code} value={country.code}>
+                              {country.flag} {country.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="taxId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{getTaxIdLabel(selectedCountry)}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={getTaxIdPlaceholder(selectedCountry)}
+                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const formatted = formatTaxId(e.target.value, selectedCountry);
+                            field.onChange(formatted);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField

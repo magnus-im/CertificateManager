@@ -19,7 +19,7 @@ async function hashPasswordMock(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-const MOCK_TENANT_CNPJ = "00.000.000/0001-99";
+const MOCK_TENANT_CNPJ = "00.000.000/0001-99"; // used for tenants.cnpj, not suppliers/clients
 const MOCK_TENANT_NAME = "Empresa Mock de Testes Ltda";
 
 // Helper para escolher item aleatório de array
@@ -224,7 +224,7 @@ export async function generateMockData() {
   for (let i = 0; i < 5; i++) {
     const [m] = await db.insert(manufacturers).values({
       name: `${getRandomItem(companyPrefixes)} Fab ${i + 1} ${getRandomItem(companySuffixes)}`,
-      country: i === 0 ? "Brasil" : (Math.random() > 0.5 ? "China" : "Alemanha"),
+      country: i === 0 ? "BR" : (Math.random() > 0.5 ? "CN" : "DE"),
       tenantId: tenant.id
     }).returning();
     createdManufacturers.push(m);
@@ -233,7 +233,8 @@ export async function generateMockData() {
   for (let i = 0; i < 8; i++) {
     const [s] = await db.insert(suppliers).values({
       name: `${getRandomItem(companyPrefixes)} Forn ${i + 1} ${getRandomItem(companySuffixes)}`,
-      cnpj: `10.${getRandomInt(100, 999)}.${getRandomInt(100, 999)}/0001-${getRandomInt(10, 99)}`,
+      country: "BR",
+      taxId: `10.${getRandomInt(100, 999)}.${getRandomInt(100, 999)}/0001-${getRandomInt(10, 99)}`,
       tenantId: tenant.id,
       address: `Rua Indústria, ${i * 100}`
     }).returning();
@@ -243,7 +244,8 @@ export async function generateMockData() {
   for (let i = 0; i < 10; i++) {
     const [c] = await db.insert(clients).values({
       name: `Cliente ${i + 1} ${getRandomItem(companySuffixes)}`,
-      cnpj: `20.${getRandomInt(100, 999)}.${getRandomInt(100, 999)}/0001-${getRandomInt(10, 99)}`,
+      country: "BR",
+      taxId: `20.${getRandomInt(100, 999)}.${getRandomInt(100, 999)}/0001-${getRandomInt(10, 99)}`,
       tenantId: tenant.id,
       address: `Av Comércio, ${i * 50}`
     }).returning();

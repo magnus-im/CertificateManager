@@ -168,10 +168,10 @@ export default function IssuedCertificateDetailPage() {
                           {client?.name || certificate.clientName || `Cliente #${certificate.clientId}`}
                         </div>
                       </div>
-                      {client?.cnpj && (
+                      {client?.taxId && (
                         <div>
-                          <div className="text-sm font-medium text-gray-500">CNPJ</div>
-                          <div className="text-gray-900">{client.cnpj}</div>
+                          <div className="text-sm font-medium text-gray-500">ID Fiscal</div>
+                          <div className="text-gray-900">{client.taxId}</div>
                         </div>
                       )}
                       {client?.address && (

@@ -36,18 +36,24 @@ export interface ImportResult {
 const COLUMN_MAPPINGS: Record<string, Record<string, string>> = {
     suppliers: {
         'Nome': 'name',
-        'CNPJ': 'cnpj',
+        'País': 'country',
+        'ID Fiscal': 'taxId',
         'Telefone': 'phone',
         'Endereço': 'address',
         'Código Interno': 'internalCode'
     },
     manufacturers: {
         'Nome': 'name',
-        'País': 'country'
+        'País': 'country',
+        'ID Fiscal': 'taxId',
+        'Telefone': 'phone',
+        'Endereço': 'address',
+        'Código Interno': 'internalCode'
     },
     clients: {
         'Nome': 'name',
-        'CNPJ': 'cnpj',
+        'País': 'country',
+        'ID Fiscal': 'taxId',
         'Telefone': 'phone',
         'Endereço': 'address',
         'Código Interno': 'internalCode'

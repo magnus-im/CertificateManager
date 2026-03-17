@@ -174,7 +174,8 @@ export const productCharacteristics = pgTable("product_characteristics", {
 export const suppliers = pgTable("suppliers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  cnpj: text("cnpj").notNull(),
+  country: text("country").notNull().default("BR"),
+  taxId: text("tax_id"),
   phone: text("phone"),
   address: text("address"),
   internalCode: text("internal_code"),
@@ -185,13 +186,18 @@ export const manufacturers = pgTable("manufacturers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   country: text("country").notNull(),
+  taxId: text("tax_id"),
+  phone: text("phone"),
+  address: text("address"),
+  internalCode: text("internal_code"),
   tenantId: integer("tenant_id").notNull().references(() => tenants.id),
 });
 
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  cnpj: text("cnpj").notNull(),
+  country: text("country").notNull().default("BR"),
+  taxId: text("tax_id"),
   phone: text("phone"),
   address: text("address"),
   internalCode: text("internal_code"),
@@ -399,26 +405,41 @@ export const insertProductCharacteristicSchema = createInsertSchema(productChara
 
 export const insertSupplierSchema = createInsertSchema(suppliers).pick({
   name: true,
-  cnpj: true,
+  country: true,
+  taxId: true,
   phone: true,
   address: true,
   internalCode: true,
   tenantId: true,
+}).extend({
+  taxId: z.string().optional().nullable(),
 });
 
 export const insertManufacturerSchema = createInsertSchema(manufacturers).pick({
   name: true,
   country: true,
-  tenantId: true,
-});
-
-export const insertClientSchema = createInsertSchema(clients).pick({
-  name: true,
-  cnpj: true,
+  taxId: true,
   phone: true,
   address: true,
   internalCode: true,
   tenantId: true,
+}).extend({
+  taxId: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  internalCode: z.string().optional().nullable(),
+});
+
+export const insertClientSchema = createInsertSchema(clients).pick({
+  name: true,
+  country: true,
+  taxId: true,
+  phone: true,
+  address: true,
+  internalCode: true,
+  tenantId: true,
+}).extend({
+  taxId: z.string().optional().nullable(),
 });
 
 export const insertEntryCertificateSchema = createInsertSchema(entryCertificates)

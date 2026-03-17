@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, Factory, Pencil, Search, Trash2, Plus } from "lucide-react";
 import { insertManufacturerSchema, Manufacturer } from "@shared/schema";
+import { COUNTRIES, getCountryByCode, getTaxIdLabel, getTaxIdPlaceholder, formatTaxId } from "@shared/countries";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -30,25 +32,37 @@ export default function ManufacturersPage() {
   const filteredManufacturers = manufacturers
     ? manufacturers.filter(manufacturer =>
       manufacturer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      manufacturer.country.toLowerCase().includes(searchQuery.toLowerCase())
+      manufacturer.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (manufacturer.taxId && manufacturer.taxId.includes(searchQuery)) ||
+      (manufacturer.internalCode && manufacturer.internalCode.toLowerCase().includes(searchQuery.toLowerCase()))
     )
     : [];
 
   // Form for adding/editing manufacturers
-  const form = useForm<Omit<Manufacturer, "id" | "tenantId">>({
+  const form = useForm({
     resolver: zodResolver(insertManufacturerSchema.omit({ tenantId: true })),
     defaultValues: {
       name: "",
-      country: "",
+      country: "BR",
+      taxId: "",
+      phone: "",
+      address: "",
+      internalCode: "",
     },
   });
+
+  const selectedCountry = form.watch("country");
 
   // Set form values when editing
   const handleEdit = (manufacturer: Manufacturer) => {
     setEditingManufacturer(manufacturer);
     form.reset({
       name: manufacturer.name,
-      country: manufacturer.country,
+      country: manufacturer.country || "BR",
+      taxId: manufacturer.taxId || "",
+      phone: manufacturer.phone || "",
+      address: manufacturer.address || "",
+      internalCode: manufacturer.internalCode || "",
     });
     setIsDialogOpen(true);
   };
@@ -58,20 +72,29 @@ export default function ManufacturersPage() {
     setEditingManufacturer(null);
     form.reset({
       name: "",
-      country: "",
+      country: "BR",
+      taxId: "",
+      phone: "",
+      address: "",
+      internalCode: "",
     });
     setIsDialogOpen(true);
   };
 
   // Mutation for adding/editing manufacturer
   const manufacturerMutation = useMutation({
-    mutationFn: async (data: Omit<Manufacturer, "id" | "tenantId">) => {
+    mutationFn: async (data: any) => {
+      const payload = {
+        ...data,
+        taxId: data.taxId?.trim() || null,
+        phone: data.phone?.trim() || null,
+        address: data.address?.trim() || null,
+        internalCode: data.internalCode?.trim() || null,
+      };
       if (editingManufacturer) {
-        // Update existing manufacturer
-        await apiRequest("PATCH", `/api/manufacturers/${editingManufacturer.id}`, data);
+        await apiRequest("PATCH", `/api/manufacturers/${editingManufacturer.id}`, payload);
       } else {
-        // Create new manufacturer
-        await apiRequest("POST", "/api/manufacturers", data);
+        await apiRequest("POST", "/api/manufacturers", payload);
       }
     },
     onSuccess: () => {
@@ -120,8 +143,13 @@ export default function ManufacturersPage() {
     }
   };
 
-  const onSubmit = (data: Omit<Manufacturer, "id" | "tenantId">) => {
+  const onSubmit = (data: any) => {
     manufacturerMutation.mutate(data);
+  };
+
+  const renderCountryFlag = (countryCode: string) => {
+    const country = getCountryByCode(countryCode);
+    return country ? `${country.flag} ${country.name}` : countryCode;
   };
 
   return (
@@ -146,7 +174,7 @@ export default function ManufacturersPage() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Buscar por nome ou país de origem..."
+                placeholder="Buscar por nome, país, ID fiscal ou código interno..."
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -166,15 +194,19 @@ export default function ManufacturersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[250px]">Nome</TableHead>
-                      <TableHead>País de Origem</TableHead>
+                      <TableHead className="w-[200px]">Nome</TableHead>
+                      <TableHead>País</TableHead>
+                      <TableHead>ID Fiscal</TableHead>
+                      <TableHead>Telefone</TableHead>
+                      <TableHead>Endereço</TableHead>
+                      <TableHead>Código Interno</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredManufacturers.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                           <Factory className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                           {searchQuery
                             ? "Nenhum fabricante encontrado com os critérios de busca"
@@ -185,7 +217,13 @@ export default function ManufacturersPage() {
                       filteredManufacturers.map((manufacturer) => (
                         <TableRow key={manufacturer.id}>
                           <TableCell className="font-medium">{manufacturer.name}</TableCell>
-                          <TableCell>{manufacturer.country}</TableCell>
+                          <TableCell>
+                            <span className="whitespace-nowrap">{renderCountryFlag(manufacturer.country)}</span>
+                          </TableCell>
+                          <TableCell>{manufacturer.taxId || "-"}</TableCell>
+                          <TableCell>{manufacturer.phone || "-"}</TableCell>
+                          <TableCell>{manufacturer.address || "-"}</TableCell>
+                          <TableCell>{manufacturer.internalCode || "-"}</TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
@@ -216,7 +254,7 @@ export default function ManufacturersPage() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>
               {editingManufacturer ? "Editar Fabricante" : "Novo Fabricante"}
@@ -239,14 +277,93 @@ export default function ManufacturersPage() {
                 )}
               />
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>País de Origem *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o país" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[300px]">
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country.code} value={country.code}>
+                              {country.flag} {country.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="taxId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{getTaxIdLabel(selectedCountry)}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={getTaxIdPlaceholder(selectedCountry)}
+                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const formatted = formatTaxId(e.target.value, selectedCountry);
+                            field.onChange(formatted);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="(00) 0000-0000" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="internalCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código Interno (ERP)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: FAB-001" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="country"
+                name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>País de Origem *</FormLabel>
+                    <FormLabel>Endereço</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Brasil, EUA, Alemanha" {...field} />
+                      <Input placeholder="Endereço completo" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

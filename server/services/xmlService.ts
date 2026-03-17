@@ -122,13 +122,13 @@ export class XmlService {
     }
 
     private async ensureClientExists(dest: any, tenantId: number) {
-        const cnpj = dest.CNPJ || dest.CPF;
+        const taxId = dest.CNPJ || dest.CPF;
 
-        // We can't easily search by CNPJ via storage without fetching all or adding a method.
+        // We can't easily search by taxId via storage without fetching all or adding a method.
         // Making a direct DB call for efficiency.
         const [existingClient] = await db.select().from(clients).where(
             and(
-                eq(clients.cnpj, cnpj),
+                eq(clients.taxId, taxId),
                 eq(clients.tenantId, tenantId)
             )
         );
@@ -137,7 +137,8 @@ export class XmlService {
             // Create new client
             await storage.createClient({
                 name: dest.xNome,
-                cnpj: cnpj,
+                country: "BR",
+                taxId: taxId,
                 address: `${dest.enderDest?.xLgr}, ${dest.enderDest?.nro} - ${dest.enderDest?.xBairro}, ${dest.enderDest?.xMun} - ${dest.enderDest?.UF}`,
                 tenantId,
                 internalCode: 'AUTO-IMPORT',
@@ -384,7 +385,7 @@ export class XmlService {
         const [invoice] = await db.select().from(invoices).where(eq(invoices.id, invoiceItem.invoiceId));
 
         const [client] = await db.select().from(clients).where(and(
-            eq(clients.cnpj, invoice.recipientCnpj),
+            eq(clients.taxId, invoice.recipientCnpj),
             eq(clients.tenantId, tenantId)
         ));
 
@@ -498,7 +499,7 @@ export class XmlService {
 
             // 5. Issue Certificate
             const [client] = await db.select().from(clients).where(and(
-                eq(clients.cnpj, invoice.recipientCnpj),
+                eq(clients.taxId, invoice.recipientCnpj),
                 eq(clients.tenantId, queueItem.tenantId)
             ));
 

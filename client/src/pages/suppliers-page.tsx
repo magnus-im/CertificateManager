@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2, Building2, Pencil, Search, Trash2, Plus } from "lucide-react";
 import { insertSupplierSchema, Supplier } from "@shared/schema";
+import { COUNTRIES, getCountryByCode, getTaxIdLabel, getTaxIdPlaceholder, formatTaxId } from "@shared/countries";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -30,29 +32,33 @@ export default function SuppliersPage() {
   const filteredSuppliers = suppliers
     ? suppliers.filter(supplier =>
       supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      supplier.cnpj.includes(searchQuery) ||
+      (supplier.taxId && supplier.taxId.includes(searchQuery)) ||
       (supplier.internalCode && supplier.internalCode.toLowerCase().includes(searchQuery.toLowerCase()))
     )
     : [];
 
   // Form for adding/editing suppliers
-  const form = useForm<Omit<Supplier, "id" | "tenantId">>({
+  const form = useForm({
     resolver: zodResolver(insertSupplierSchema.omit({ tenantId: true })),
     defaultValues: {
       name: "",
-      cnpj: "",
+      country: "BR",
+      taxId: "",
       phone: "",
       address: "",
       internalCode: "",
     },
   });
 
+  const selectedCountry = form.watch("country");
+
   // Set form values when editing
   const handleEdit = (supplier: Supplier) => {
     setEditingSupplier(supplier);
     form.reset({
       name: supplier.name,
-      cnpj: supplier.cnpj,
+      country: supplier.country || "BR",
+      taxId: supplier.taxId || "",
       phone: supplier.phone || "",
       address: supplier.address || "",
       internalCode: supplier.internalCode || "",
@@ -65,7 +71,8 @@ export default function SuppliersPage() {
     setEditingSupplier(null);
     form.reset({
       name: "",
-      cnpj: "",
+      country: "BR",
+      taxId: "",
       phone: "",
       address: "",
       internalCode: "",
@@ -75,13 +82,13 @@ export default function SuppliersPage() {
 
   // Mutation for adding/editing supplier
   const supplierMutation = useMutation({
-    mutationFn: async (data: Omit<Supplier, "id" | "tenantId">) => {
+    mutationFn: async (data: any) => {
+      // Clean empty taxId to null
+      const payload = { ...data, taxId: data.taxId?.trim() || null };
       if (editingSupplier) {
-        // Update existing supplier
-        await apiRequest("PATCH", `/api/suppliers/${editingSupplier.id}`, data);
+        await apiRequest("PATCH", `/api/suppliers/${editingSupplier.id}`, payload);
       } else {
-        // Create new supplier
-        await apiRequest("POST", "/api/suppliers", data);
+        await apiRequest("POST", "/api/suppliers", payload);
       }
     },
     onSuccess: () => {
@@ -130,8 +137,13 @@ export default function SuppliersPage() {
     }
   };
 
-  const onSubmit = (data: Omit<Supplier, "id" | "tenantId">) => {
+  const onSubmit = (data: any) => {
     supplierMutation.mutate(data);
+  };
+
+  const renderCountryFlag = (countryCode: string) => {
+    const country = getCountryByCode(countryCode);
+    return country ? `${country.flag} ${country.name}` : countryCode;
   };
 
   return (
@@ -156,7 +168,7 @@ export default function SuppliersPage() {
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Buscar por nome, CNPJ ou código interno..."
+                placeholder="Buscar por nome, ID fiscal ou código interno..."
                 className="pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -177,7 +189,8 @@ export default function SuppliersPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[200px]">Nome</TableHead>
-                      <TableHead>CNPJ</TableHead>
+                      <TableHead>País</TableHead>
+                      <TableHead>ID Fiscal</TableHead>
                       <TableHead>Telefone</TableHead>
                       <TableHead>Endereço</TableHead>
                       <TableHead>Código Interno</TableHead>
@@ -187,7 +200,7 @@ export default function SuppliersPage() {
                   <TableBody>
                     {filteredSuppliers.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                           <Building2 className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                           {searchQuery
                             ? "Nenhum fornecedor encontrado com os critérios de busca"
@@ -198,7 +211,10 @@ export default function SuppliersPage() {
                       filteredSuppliers.map((supplier) => (
                         <TableRow key={supplier.id}>
                           <TableCell className="font-medium">{supplier.name}</TableCell>
-                          <TableCell>{supplier.cnpj}</TableCell>
+                          <TableCell>
+                            <span className="whitespace-nowrap">{renderCountryFlag(supplier.country)}</span>
+                          </TableCell>
+                          <TableCell>{supplier.taxId || "-"}</TableCell>
                           <TableCell>{supplier.phone || "-"}</TableCell>
                           <TableCell>{supplier.address || "-"}</TableCell>
                           <TableCell>{supplier.internalCode || "-"}</TableCell>
@@ -255,19 +271,54 @@ export default function SuppliersPage() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="cnpj"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CNPJ *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="00.000.000/0000-00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>País *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o país" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[300px]">
+                          {COUNTRIES.map((country) => (
+                            <SelectItem key={country.code} value={country.code}>
+                              {country.flag} {country.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="taxId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{getTaxIdLabel(selectedCountry)}</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={getTaxIdPlaceholder(selectedCountry)}
+                          {...field}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const formatted = formatTaxId(e.target.value, selectedCountry);
+                            field.onChange(formatted);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField

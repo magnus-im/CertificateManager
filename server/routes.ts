@@ -410,7 +410,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
               <div class="company-info">
                 <div class="company-name">${tenant?.name || 'Empresa'}</div>
                 <div>${tenant?.address || ''}</div>
-                <div>CNPJ: ${tenant?.cnpj || ''}</div>
+                <div>ID Fiscal: ${tenant?.cnpj || ''}</div>
                 <div>Telefone: ${tenant?.phone || ''}</div>
               </div>
             </div>
@@ -821,7 +821,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
               <div class="company-info">
                 <div class="company-name">${tenant?.name || 'Empresa'}</div>
                 <div>${tenant?.address || ''}</div>
-                <div>CNPJ: ${tenant?.cnpj || ''}</div>
+                <div>ID Fiscal: ${tenant?.cnpj || ''}</div>
                 <div>Telefone: ${tenant?.phone || ''}</div>
               </div>
             </div>
@@ -847,8 +847,8 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
                   <div class="info-value">${client ? client.phone || 'N/A' : 'N/A'}</div>
                 </div>
                 <div class="info-item">
-                  <div class="info-label">CNPJ:</div>
-                  <div class="info-value">${client ? client.cnpj || 'N/A' : 'N/A'}</div>
+                  <div class="info-label">ID Fiscal:</div>
+                  <div class="info-value">${client ? client.taxId || 'N/A' : 'N/A'}</div>
                 </div>
               </div>
             </div>

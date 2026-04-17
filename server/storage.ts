@@ -112,7 +112,7 @@ export interface IStorage {
   getProductCharacteristic(id: number, tenantId: number): Promise<ProductCharacteristic | undefined>;
   createProductCharacteristic(characteristic: InsertProductCharacteristic): Promise<ProductCharacteristic>;
   updateProductCharacteristic(id: number, tenantId: number, characteristic: Partial<ProductCharacteristic>): Promise<ProductCharacteristic | undefined>;
-  getCharacteristicsByProduct(productId: number, tenantId: number): Promise<ProductCharacteristic[]>;
+  getCharacteristicsByBaseProduct(baseProductId: number, tenantId: number): Promise<ProductCharacteristic[]>;
   deleteProductCharacteristic(id: number, tenantId: number): Promise<boolean>;
 
   // Suppliers
@@ -371,8 +371,9 @@ export class MemStorage implements IStorage {
     const newTenant: Tenant = {
       ...tenant,
       id,
-      active: tenant.active ?? true,
+      phone: tenant.phone ?? null,
       logoUrl: tenant.logoUrl ?? null,
+      active: tenant.active ?? true,
       planId: tenant.planId ?? 1, // Plano básico por padrão
       storageUsed: tenant.storageUsed ?? 0,
       planStartDate: tenant.planStartDate ?? null,
@@ -630,7 +631,6 @@ export class MemStorage implements IStorage {
       id,
       active: product.active ?? true,
       commercialName: product.commercialName ?? null,
-      internalCode: product.internalCode ?? null,
       sku: product.sku ?? null,
       conversionFactor: product.conversionFactor ? String(product.conversionFactor) : null,
       netWeight: product.netWeight ? String(product.netWeight) : null,
@@ -699,9 +699,9 @@ export class MemStorage implements IStorage {
     return updatedCharacteristic;
   }
 
-  async getCharacteristicsByProduct(productId: number, tenantId: number): Promise<ProductCharacteristic[]> {
+  async getCharacteristicsByBaseProduct(baseProductId: number, tenantId: number): Promise<ProductCharacteristic[]> {
     return Array.from(this.productCharacteristics.values()).filter(
-      (characteristic) => characteristic.productId === productId && characteristic.tenantId === tenantId
+      (characteristic) => characteristic.baseProductId === baseProductId && characteristic.tenantId === tenantId
     );
   }
 
@@ -727,7 +727,9 @@ export class MemStorage implements IStorage {
       id,
       address: supplier.address ?? null,
       internalCode: supplier.internalCode ?? null,
-      phone: supplier.phone ?? null
+      phone: supplier.phone ?? null,
+      taxId: supplier.taxId ?? null,
+      country: supplier.country ?? 'BR',
     };
     this.suppliers.set(id, newSupplier);
     return newSupplier;
@@ -765,7 +767,15 @@ export class MemStorage implements IStorage {
 
   async createManufacturer(manufacturer: InsertManufacturer): Promise<Manufacturer> {
     const id = this.manufacturerIdCounter++;
-    const newManufacturer: Manufacturer = { ...manufacturer, id };
+    const newManufacturer: Manufacturer = { 
+      ...manufacturer,
+      id,
+      address: manufacturer.address ?? null,
+      phone: manufacturer.phone ?? null,
+      internalCode: manufacturer.internalCode ?? null,
+      taxId: manufacturer.taxId ?? null,
+      country: manufacturer.country ?? 'BR'
+    };
     this.manufacturers.set(id, newManufacturer);
     return newManufacturer;
   }
@@ -807,7 +817,9 @@ export class MemStorage implements IStorage {
       id,
       address: client.address ?? null,
       internalCode: client.internalCode ?? null,
-      phone: client.phone ?? null
+      phone: client.phone ?? null,
+      taxId: client.taxId ?? null,
+      country: client.country ?? 'BR',
     };
     this.clients.set(id, newClient);
     return newClient;
@@ -850,6 +862,7 @@ export class MemStorage implements IStorage {
       id,
       enteredAt: new Date(),
       originalFileUrl: certificate.originalFileUrl ?? null,
+      originalFileName: certificate.originalFileName ?? null,
       conversionFactor: certificate.conversionFactor ? String(certificate.conversionFactor) : null,
       receivedQuantity: typeof certificate.receivedQuantity === 'number' ?
         String(certificate.receivedQuantity) : certificate.receivedQuantity
@@ -1067,6 +1080,7 @@ export class MemStorage implements IStorage {
     const newFile: File = {
       ...file,
       id,
+      fileSizeMB: typeof file.fileSizeMB === 'number' ? String(file.fileSizeMB) : file.fileSizeMB,
       description: file.description ?? null,
       entityType: file.entityType ?? null,
       entityId: file.entityId ?? null,
@@ -1251,9 +1265,7 @@ export class MemStorage implements IStorage {
     return this.getModulesByPlan(1);
   }
 
-  async getModules(): Promise<any[]> {
-    return this.getAllModules();
-  }
+
 
   async createModule(module: InsertModule): Promise<typeof modules.$inferSelect> {
     return {
@@ -1592,7 +1604,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Tenant methods
@@ -1620,7 +1632,7 @@ export class DatabaseStorage implements IStorage {
       logoUrl: tenant.logoUrl ?? null,
       planId: planId,
       storageUsed: tenant.storageUsed ?? 0,
-      planStartDate: tenant.planStartDate ?? new Date(),
+      planStartDate: tenant.planStartDate ?? new Date().toISOString(),
       planEndDate: tenant.planEndDate ?? null
     }).returning();
     return newTenant;
@@ -1679,7 +1691,7 @@ export class DatabaseStorage implements IStorage {
         eq(productCategories.id, id),
         eq(productCategories.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Product Subcategory methods
@@ -1731,7 +1743,7 @@ export class DatabaseStorage implements IStorage {
         eq(productSubcategories.id, id),
         eq(productSubcategories.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Product Base methods
@@ -1787,24 +1799,37 @@ export class DatabaseStorage implements IStorage {
         eq(productBase.id, id),
         eq(productBase.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Product methods
   async getProduct(id: number, tenantId: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products)
+    const result = await db.select({
+      product: products,
+      productBase: productBase
+    }).from(products)
+      .leftJoin(productBase, eq(products.baseProductId, productBase.id))
       .where(and(
         eq(products.id, id),
         eq(products.tenantId, tenantId)
       ));
-    return product;
+    
+    if (result.length === 0) return undefined;
+    
+    return {
+      ...result[0].product,
+      productBase: result[0].productBase || undefined
+    } as Product;
   }
 
   async createProduct(productData: InsertProduct): Promise<Product> {
     const [newProduct] = await db.insert(products).values({
       ...productData,
       active: productData.active ?? true,
-      specifications: productData.specifications ?? null
+      specifications: productData.specifications ?? null,
+      conversionFactor: productData.conversionFactor != null ? String(productData.conversionFactor) : null,
+      netWeight: productData.netWeight != null ? String(productData.netWeight) : null,
+      grossWeight: productData.grossWeight != null ? String(productData.grossWeight) : null,
     }).returning();
     return newProduct;
   }
@@ -1821,16 +1846,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProductsByBase(baseProductId: number, tenantId: number): Promise<Product[]> {
-    return await db.select().from(products)
+    const results = await db.select({
+      product: products,
+      productBase: productBase
+    }).from(products)
+      .leftJoin(productBase, eq(products.baseProductId, productBase.id))
       .where(and(
         eq(products.baseProductId, baseProductId),
         eq(products.tenantId, tenantId)
       ));
+      
+    return results.map(r => ({
+      ...r.product,
+      productBase: r.productBase || undefined
+    })) as Product[];
   }
 
   async getProductsByTenant(tenantId: number): Promise<Product[]> {
-    return await db.select().from(products)
+    const results = await db.select({
+      product: products,
+      productBase: productBase
+    }).from(products)
+      .leftJoin(productBase, eq(products.baseProductId, productBase.id))
       .where(eq(products.tenantId, tenantId));
+      
+    return results.map(r => ({
+      ...r.product,
+      productBase: r.productBase || undefined
+    })) as Product[];
   }
 
   async deleteProduct(id: number, tenantId: number): Promise<boolean> {
@@ -1839,7 +1882,7 @@ export class DatabaseStorage implements IStorage {
         eq(products.id, id),
         eq(products.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Product Files methods
@@ -1871,7 +1914,7 @@ export class DatabaseStorage implements IStorage {
         eq(productFiles.id, id),
         eq(productFiles.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Product Base Files methods
@@ -1912,7 +1955,7 @@ export class DatabaseStorage implements IStorage {
         eq(productBaseFiles.id, id),
         eq(productBaseFiles.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Product Characteristics methods
@@ -1926,7 +1969,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProductCharacteristic(characteristic: InsertProductCharacteristic): Promise<ProductCharacteristic> {
-    const [newCharacteristic] = await db.insert(productCharacteristics).values(characteristic).returning();
+    const [newCharacteristic] = await db.insert(productCharacteristics).values({
+      ...characteristic,
+      minValue: characteristic.minValue != null ? String(characteristic.minValue) : null,
+      maxValue: characteristic.maxValue != null ? String(characteristic.maxValue) : null,
+    }).returning();
     return newCharacteristic;
   }
 
@@ -1941,10 +1988,10 @@ export class DatabaseStorage implements IStorage {
     return characteristic;
   }
 
-  async getCharacteristicsByProduct(productId: number, tenantId: number): Promise<ProductCharacteristic[]> {
+  async getCharacteristicsByBaseProduct(baseProductId: number, tenantId: number): Promise<ProductCharacteristic[]> {
     return await db.select().from(productCharacteristics)
       .where(and(
-        eq(productCharacteristics.productId, productId),
+        eq(productCharacteristics.baseProductId, baseProductId),
         eq(productCharacteristics.tenantId, tenantId)
       ));
   }
@@ -1955,7 +2002,7 @@ export class DatabaseStorage implements IStorage {
         eq(productCharacteristics.id, id),
         eq(productCharacteristics.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Suppliers methods
@@ -1995,7 +2042,7 @@ export class DatabaseStorage implements IStorage {
         eq(suppliers.id, id),
         eq(suppliers.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Manufacturers methods
@@ -2035,7 +2082,7 @@ export class DatabaseStorage implements IStorage {
         eq(manufacturers.id, id),
         eq(manufacturers.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Clients methods
@@ -2075,7 +2122,7 @@ export class DatabaseStorage implements IStorage {
         eq(clients.id, id),
         eq(clients.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Entry Certificates methods
@@ -2089,7 +2136,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEntryCertificate(certificate: InsertEntryCertificate): Promise<EntryCertificate> {
-    const [newCertificate] = await db.insert(entryCertificates).values(certificate).returning();
+    const [newCertificate] = await db.insert(entryCertificates).values({
+      ...certificate,
+      receivedQuantity: String(certificate.receivedQuantity),
+      conversionFactor: certificate.conversionFactor != null ? String(certificate.conversionFactor) : null,
+    }).returning();
     return newCertificate;
   }
 
@@ -2116,7 +2167,7 @@ export class DatabaseStorage implements IStorage {
         eq(entryCertificates.id, id),
         eq(entryCertificates.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Entry Certificate Results methods
@@ -2130,7 +2181,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEntryCertificateResult(result: InsertEntryCertificateResult): Promise<EntryCertificateResult> {
-    const [newResult] = await db.insert(entryCertificateResults).values(result).returning();
+    const [newResult] = await db.insert(entryCertificateResults).values({
+      ...result,
+      obtainedValue: String(result.obtainedValue),
+      minValue: result.minValue != null ? String(result.minValue) : null,
+      maxValue: result.maxValue != null ? String(result.maxValue) : null,
+    }).returning();
     return newResult;
   }
 
@@ -2159,7 +2215,7 @@ export class DatabaseStorage implements IStorage {
         eq(entryCertificateResults.id, id),
         eq(entryCertificateResults.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Issued Certificates methods
@@ -2173,7 +2229,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createIssuedCertificate(certificate: InsertIssuedCertificate): Promise<IssuedCertificate> {
-    const [newCertificate] = await db.insert(issuedCertificates).values(certificate).returning();
+    const [newCertificate] = await db.insert(issuedCertificates).values({
+      ...certificate,
+      soldQuantity: String(certificate.soldQuantity)
+    }).returning();
     return newCertificate;
   }
 
@@ -2197,7 +2256,7 @@ export class DatabaseStorage implements IStorage {
         eq(issuedCertificates.id, id),
         eq(issuedCertificates.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Package Types methods
@@ -2237,7 +2296,7 @@ export class DatabaseStorage implements IStorage {
         eq(packageTypes.id, id),
         eq(packageTypes.tenantId, tenantId)
       ));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Files Management methods
@@ -2254,6 +2313,7 @@ export class DatabaseStorage implements IStorage {
     // Inserir o arquivo no banco
     const [newFile] = await db.insert(files).values({
       ...file,
+      fileSizeMB: String(file.fileSizeMB),
       description: file.description ?? null,
       entityType: file.entityType ?? null,
       entityId: file.entityId ?? null,
@@ -2320,7 +2380,7 @@ export class DatabaseStorage implements IStorage {
         eq(files.tenantId, tenantId)
       ));
 
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Plans & Modules methods
@@ -2450,7 +2510,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`Removendo o tenant ID: ${id}`);
       const result = await db.delete(tenants).where(eq(tenants.id, id));
 
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error(`Erro ao excluir tenant ${id}:`, error);
       throw error;
@@ -2531,7 +2591,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.delete(plans)
         .where(eq(plans.id, id));
 
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error("Error deleting plan:", error);
       throw error;
@@ -2572,7 +2632,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.delete(modules)
         .where(eq(modules.id, id));
 
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error("Error deleting module:", error);
       throw error;
@@ -2673,7 +2733,7 @@ export class DatabaseStorage implements IStorage {
       const result = await db.delete(moduleFeatures)
         .where(eq(moduleFeatures.id, id));
 
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error("Error deleting module feature:", error);
       throw error;

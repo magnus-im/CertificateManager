@@ -48,6 +48,11 @@ interface EnrichedEntryCertificate extends EntryCertificate {
   results?: any[];
 }
 
+interface EnrichedIssuedCertificate extends IssuedCertificate {
+  clientName?: string;
+  productName?: string;
+}
+
 export default function IssuedCertificatesPage() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -99,7 +104,7 @@ export default function IssuedCertificatesPage() {
     data: issuedCertificates,
     isLoading: isLoadingCertificates,
     refetch,
-  } = useQuery<IssuedCertificate[]>({
+  } = useQuery<EnrichedIssuedCertificate[]>({
     queryKey: ["/api/issued-certificates"],
   });
 

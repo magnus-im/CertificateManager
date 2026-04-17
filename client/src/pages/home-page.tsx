@@ -11,13 +11,13 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 export default function HomePage() {
   const { user } = useAuth();
 
-  const { data: entryCertificatesData, isLoading: isLoadingEntryCertificates } = useQuery({ queryKey: ["/api/entry-certificates"] });
-  const { data: issuedCertificatesData, isLoading: isLoadingIssuedCertificates } = useQuery({ queryKey: ["/api/issued-certificates"] });
-  const { data: productsData, isLoading: isLoadingProducts } = useQuery({ queryKey: ["/api/products"] });
-  const { data: suppliersData, isLoading: isLoadingSuppliers } = useQuery({ queryKey: ["/api/suppliers"] });
-  const { data: clientsData, isLoading: isLoadingClients } = useQuery({ queryKey: ["/api/clients"] });
-  const { data: manufacturersData, isLoading: isLoadingManufacturers } = useQuery({ queryKey: ["/api/manufacturers"] });
-  const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery({ queryKey: ["/api/tenants/self/subscription"] });
+  const { data: entryCertificatesData, isLoading: isLoadingEntryCertificates } = useQuery<any[]>({ queryKey: ["/api/entry-certificates"] });
+  const { data: issuedCertificatesData, isLoading: isLoadingIssuedCertificates } = useQuery<any[]>({ queryKey: ["/api/issued-certificates"] });
+  const { data: productsData, isLoading: isLoadingProducts } = useQuery<any[]>({ queryKey: ["/api/products"] });
+  const { data: suppliersData, isLoading: isLoadingSuppliers } = useQuery<any[]>({ queryKey: ["/api/suppliers"] });
+  const { data: clientsData, isLoading: isLoadingClients } = useQuery<any[]>({ queryKey: ["/api/clients"] });
+  const { data: manufacturersData, isLoading: isLoadingManufacturers } = useQuery<any[]>({ queryKey: ["/api/manufacturers"] });
+  const { data: subscriptionData, isLoading: isLoadingSubscription } = useQuery<any>({ queryKey: ["/api/tenants/self/subscription"] });
 
   const isLoading = isLoadingEntryCertificates || isLoadingIssuedCertificates ||
     isLoadingProducts || isLoadingSuppliers ||

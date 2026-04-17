@@ -18,6 +18,7 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ProductBaseFileButtons } from "./product-base-file-buttons";
+import { ProductCharacteristicsForm } from "./product-characteristics-form";
 
 interface ProductBaseFormProps {
   productBaseId: number | null;
@@ -242,9 +243,12 @@ export function ProductBaseForm({ productBaseId, defaultSubcategoryId, onSuccess
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Tabs defaultValue="info" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className={`grid w-full ${productBaseId ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <TabsTrigger value="info">Informações Gerais</TabsTrigger>
           <TabsTrigger value="files">Arquivos</TabsTrigger>
+          {productBaseId && (
+            <TabsTrigger value="characteristics">Características</TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="info" className="space-y-4 pt-4">
@@ -554,6 +558,12 @@ export function ProductBaseForm({ productBaseId, defaultSubcategoryId, onSuccess
             </Card>
           </div>
         </TabsContent>
+        
+        {productBaseId && (
+          <TabsContent value="characteristics" className="space-y-4 pt-4">
+            <ProductCharacteristicsForm baseProductId={productBaseId} />
+          </TabsContent>
+        )}
       </Tabs>
       
       <div className="flex justify-end space-x-2 pt-4">

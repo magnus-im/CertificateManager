@@ -120,14 +120,11 @@ export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   baseProductId: integer("base_product_id").notNull().references(() => productBase.id),
   sku: text("sku"), // Código único para esta variante específica
-  technicalName: text("technical_name").notNull(),
   commercialName: text("commercial_name"),
-  internalCode: text("internal_code"),
-  defaultMeasureUnit: text("default_measure_unit").notNull(),
   conversionFactor: numeric("conversion_factor"), // Fator de conversão para esta variante
   netWeight: numeric("net_weight"), // Peso líquido
   grossWeight: numeric("gross_weight"), // Peso bruto
-  specifications: jsonb("specifications"), // Especificações adicionais em formato JSON
+  specifications: jsonb("specifications"), // packagingMetadata - Especificações de embalagens, paletes e volumes
   tenantId: integer("tenant_id").notNull().references(() => tenants.id),
   active: boolean("active").notNull().default(true),
 });
@@ -161,7 +158,7 @@ export const productBaseFiles = pgTable("product_base_files", {
 
 export const productCharacteristics = pgTable("product_characteristics", {
   id: serial("id").primaryKey(),
-  productId: integer("product_id").notNull().references(() => products.id),
+  baseProductId: integer("base_product_id").notNull().references(() => productBase.id),
   name: text("name").notNull(),
   unit: text("unit").notNull(),
   minValue: numeric("min_value"),
@@ -348,10 +345,7 @@ export const insertProductBaseSchema = createInsertSchema(productBase).pick({
 export const insertProductSchema = createInsertSchema(products).pick({
   baseProductId: true,
   sku: true,
-  technicalName: true,
   commercialName: true,
-  internalCode: true,
-  defaultMeasureUnit: true,
   conversionFactor: true,
   netWeight: true,
   grossWeight: true,
@@ -389,7 +383,7 @@ export const insertProductBaseFileSchema = createInsertSchema(productBaseFiles).
 
 export const insertProductCharacteristicSchema = createInsertSchema(productCharacteristics)
   .pick({
-    productId: true,
+    baseProductId: true,
     name: true,
     unit: true,
     minValue: true,
@@ -611,6 +605,7 @@ export const productBaseRelations = relations(productBase, ({ one, many }) => ({
   }),
   variants: many(products),
   files: many(productBaseFiles),
+  characteristics: many(productCharacteristics),
 }));
 
 export const productsRelations = relations(products, ({ one, many }) => ({
@@ -623,7 +618,6 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     references: [productBase.id],
   }),
   files: many(productFiles),
-  characteristics: many(productCharacteristics),
   entryCertificates: many(entryCertificates),
 }));
 
@@ -654,9 +648,9 @@ export const productCharacteristicsRelations = relations(productCharacteristics,
     fields: [productCharacteristics.tenantId],
     references: [tenants.id],
   }),
-  product: one(products, {
-    fields: [productCharacteristics.productId],
-    references: [products.id],
+  productBase: one(productBase, {
+    fields: [productCharacteristics.baseProductId],
+    references: [productBase.id],
   }),
 }));
 
@@ -766,7 +760,12 @@ export type ProductSubcategory = typeof productSubcategories.$inferSelect;
 export type InsertProductSubcategory = z.infer<typeof insertProductSubcategorySchema>;
 export type ProductBase = typeof productBase.$inferSelect;
 export type InsertProductBase = z.infer<typeof insertProductBaseSchema>;
-export type Product = typeof products.$inferSelect;
+export type Product = typeof products.$inferSelect & {
+  productBase?: typeof productBase.$inferSelect;
+  technicalName?: string;
+  internalCode?: string | null;
+  defaultMeasureUnit?: string;
+};
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type ProductFile = typeof productFiles.$inferSelect;
 export type InsertProductFile = z.infer<typeof insertProductFileSchema>;

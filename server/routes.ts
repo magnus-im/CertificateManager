@@ -1632,7 +1632,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       }
 
       // Get product characteristics
-      const characteristics = await storage.getCharacteristicsByProduct(product.id, user.tenantId);
+      const characteristics = await storage.getCharacteristicsByBaseProduct(product.baseProductId, user.tenantId);
 
       res.json({ ...product, characteristics });
     } catch (error) {
@@ -1692,8 +1692,13 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
   app.get("/api/products/:productId/characteristics", isAuthenticated, async (req, res, next) => {
     try {
       const user = req.user!;
-      const characteristics = await storage.getCharacteristicsByProduct(
-        Number(req.params.productId),
+      const product = await storage.getProduct(Number(req.params.productId), user.tenantId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      const characteristics = await storage.getCharacteristicsByBaseProduct(
+        product.baseProductId,
         user.tenantId
       );
 
@@ -1710,7 +1715,8 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
 
       let characteristics: any[];
       if (productId) {
-        characteristics = await storage.getCharacteristicsByProduct(productId, user.tenantId);
+        const product = await storage.getProduct(productId, user.tenantId);
+        characteristics = product ? await storage.getCharacteristicsByBaseProduct(product.baseProductId, user.tenantId) : [];
       } else {
         // Return all characteristics (could be limited to a tenant)
         // Implementation depends on business requirements
@@ -2086,7 +2092,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
 
       // Handle results if provided
       if (req.body.results && Array.isArray(req.body.results)) {
-        const resultsPromises = req.body.results.map(result => {
+        const resultsPromises = req.body.results.map((result: any) => {
           const resultData = insertEntryCertificateResultSchema.parse({
             ...result,
             entryCertificateId: certificate.id,
@@ -2210,8 +2216,8 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         );
 
         const newResultIds = req.body.results
-          .filter(r => r.id)
-          .map(r => r.id);
+          .filter((r: any) => r.id)
+          .map((r: any) => r.id);
 
         for (const result of existingResults) {
           if (!newResultIds.includes(result.id)) {
@@ -2392,7 +2398,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       let product = null;
       let supplier = null;
       let manufacturer = null;
-      let results = [];
+      let results: any[] = [];
 
       if (entryCertificate) {
         // Get entry certificate results
@@ -3165,7 +3171,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
 
       // Tenants recentes (5 mais recentes)
       const recentTenants = tenants
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .sort((a, b) => b.id - a.id)
         .slice(0, 5);
 
       // Usuários recentes (5 mais recentes)
@@ -3197,7 +3203,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           name: tenant.name,
           storageUsed,
           fileCount: tenantFiles.length,
-          maxStorage: plan?.maxStorage || 0,
+          maxStorage: plan?.storageLimit || 0,
           planName: plan?.name || 'Desconhecido'
         });
       }
@@ -3248,7 +3254,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           ...tenant,
           storageUsed,
           fileCount: tenantFiles.length,
-          maxStorage: plan?.maxStorage || 0,
+          maxStorage: plan?.storageLimit || 0,
           planName: plan?.name || 'Desconhecido'
         });
       }
@@ -3365,8 +3371,8 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       }
 
       res.status(200).json({
-        message: "Assinatura renovada com sucesso",
-        ...result
+        ...result,
+        message: "Assinatura renovada com sucesso"
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -3460,8 +3466,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
         name,
         code,
         description,
-        maxStorage: maxStorage || 1,
-        maxFileSize: maxFileSize || 1,
+        storageLimit: maxStorage || 1,
         price: price || 0,
         maxUsers: req.body.maxUsers || 1
       };
@@ -3504,13 +3509,12 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
       }
 
       // Extrair dados do corpo da requisição
-      const { price, maxStorage, maxFileSize, description } = req.body;
+      const { price, maxStorage, description } = req.body;
 
       // Atualizar o plano
       const updatedPlan = await storage.updatePlan(id, {
         price: price !== undefined ? price : existingPlan.price,
         storageLimit: maxStorage !== undefined ? maxStorage : existingPlan.storageLimit,
-        maxFileSize: maxFileSize !== undefined ? maxFileSize : existingPlan.maxFileSize,
         description: description !== undefined ? description : existingPlan.description
       });
 
@@ -3758,7 +3762,7 @@ Em um ambiente de produção, este seria o conteúdo real do arquivo.`);
           name: tenant.name,
           storageUsed,
           fileCount: tenantFiles.length,
-          maxStorage: plan?.maxStorage || 0,
+          maxStorage: plan?.storageLimit || 0,
           planName: plan?.name || 'Desconhecido'
         });
       }

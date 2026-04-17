@@ -10,10 +10,10 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 interface ProductCharacteristicsFormProps {
-  productId: number;
+  baseProductId: number;
 }
 
-export function ProductCharacteristicsForm({ productId }: ProductCharacteristicsFormProps) {
+export function ProductCharacteristicsForm({ baseProductId }: ProductCharacteristicsFormProps) {
   const { toast } = useToast();
   const [newCharacteristic, setNewCharacteristic] = useState({
     name: "",
@@ -25,7 +25,7 @@ export function ProductCharacteristicsForm({ productId }: ProductCharacteristics
 
   // Fetch product characteristics
   const { data: characteristics, isLoading } = useQuery<ProductCharacteristic[]>({
-    queryKey: [`/api/products/${productId}/characteristics`],
+    queryKey: [`/api/product-base/${baseProductId}/characteristics`],
   });
 
   // Mutation for adding a characteristic
@@ -33,7 +33,7 @@ export function ProductCharacteristicsForm({ productId }: ProductCharacteristics
     mutationFn: async (data: typeof newCharacteristic) => {
       const payload = {
         ...data,
-        productId,
+        baseProductId,
         minValue: data.minValue ? parseFloat(data.minValue) : null,
         maxValue: data.maxValue ? parseFloat(data.maxValue) : null,
       };
@@ -41,7 +41,7 @@ export function ProductCharacteristicsForm({ productId }: ProductCharacteristics
       await apiRequest("POST", "/api/product-characteristics", payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/characteristics`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/product-base/${baseProductId}/characteristics`] });
       setNewCharacteristic({
         name: "",
         unit: "",
@@ -69,7 +69,7 @@ export function ProductCharacteristicsForm({ productId }: ProductCharacteristics
       await apiRequest("DELETE", `/api/product-characteristics/${characteristicId}`, undefined);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/characteristics`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/product-base/${baseProductId}/characteristics`] });
       toast({
         title: "Característica removida",
         description: "A característica foi removida com sucesso.",
@@ -98,7 +98,7 @@ export function ProductCharacteristicsForm({ productId }: ProductCharacteristics
       // Validate form data
       insertProductCharacteristicSchema.parse({
         ...newCharacteristic,
-        productId,
+        baseProductId,
         minValue: newCharacteristic.minValue ? parseFloat(newCharacteristic.minValue) : null,
         maxValue: newCharacteristic.maxValue ? parseFloat(newCharacteristic.maxValue) : null,
         tenantId: 1, // This will be assigned by the server based on the authenticated user

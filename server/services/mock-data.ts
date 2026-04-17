@@ -205,10 +205,8 @@ export async function generateMockData() {
 
     const [prod] = await db.insert(products).values({
       baseProductId: base.id,
-      technicalName: base.technicalName,
       commercialName: `${base.commercialName} - ${weight}kg`,
       sku: `PROD-${base.id}-${i}`,
-      defaultMeasureUnit: "kg",
       netWeight: weight.toString(),
       tenantId: tenant.id
     }).returning();

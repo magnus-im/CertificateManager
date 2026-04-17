@@ -9,6 +9,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Package, Pencil, Search, Trash2, Plus, ChevronLeft, Boxes, FolderTree } from "lucide-react";
 import { ProductForm } from "@/components/products/product-form";
 import { Product, ProductBase } from "@shared/schema";
+
+type ProductWithBase = Product & {
+  productBase?: ProductBase;
+};
 import { Link, useLocation } from "wouter";
 
 export default function ProductsPage() {
@@ -34,7 +38,7 @@ export default function ProductsPage() {
   });
   
   // Get products (variants)
-  const { data: products, isLoading } = useQuery<Product[]>({
+  const { data: products, isLoading } = useQuery<ProductWithBase[]>({
     queryKey: ["/api/products", { baseProductId }],
     queryFn: async () => {
       const endpoint = baseProductId 
@@ -50,12 +54,15 @@ export default function ProductsPage() {
   
   // Filter products based on search query
   const filteredProducts = products
-    ? products.filter(product => 
-        product.technicalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (product.commercialName && product.commercialName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (product.internalCode && product.internalCode.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+    ? products.filter(product => {
+        const technicalName = product.productBase?.technicalName || "";
+        const internalCode = product.productBase?.internalCode || "";
+        
+        return technicalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (product.commercialName && product.commercialName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (internalCode && internalCode.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()));
+      })
     : [];
   
   const handleEdit = (productId: number) => {
@@ -169,10 +176,10 @@ export default function ProductsPage() {
                       filteredProducts.map((product) => (
                         <TableRow key={product.id}>
                           <TableCell>{product.sku || "-"}</TableCell>
-                          <TableCell>{product.technicalName}</TableCell>
+                          <TableCell>{product.productBase?.technicalName}</TableCell>
                           <TableCell>{product.commercialName || "-"}</TableCell>
-                          <TableCell>{product.internalCode || "-"}</TableCell>
-                          <TableCell>{product.defaultMeasureUnit}</TableCell>
+                          <TableCell>{product.productBase?.internalCode || "-"}</TableCell>
+                          <TableCell>{product.productBase?.defaultMeasureUnit}</TableCell>
                           <TableCell>
                             <Button variant="ghost" size="sm" asChild>
                               <Link href={`/products/${product.id}`}>Ver Características</Link>

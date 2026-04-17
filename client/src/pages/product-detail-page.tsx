@@ -96,7 +96,7 @@ export default function ProductDetailPage() {
                 <CardTitle>Características do Produto</CardTitle>
               </CardHeader>
               <CardContent>
-                <ProductCharacteristicsForm productId={productId} />
+                <ProductCharacteristicsForm baseProductId={product.baseProductId} />
               </CardContent>
             </Card>
           </TabsContent>

@@ -135,19 +135,19 @@ export default function SettingsPage() {
   });
   
   // Fetch tenant data
-  const { data: tenant, isLoading: isLoadingTenant } = useQuery({
+  const { data: tenant, isLoading: isLoadingTenant } = useQuery<any>({
     queryKey: ["/api/tenant/profile"],
     enabled: !!user?.tenantId,
   });
   
   // Fetch users for tenant
-  const { data: users, isLoading: isLoadingUsers } = useQuery({
+  const { data: users, isLoading: isLoadingUsers } = useQuery<any[]>({
     queryKey: ["/api/users"],
     enabled: !!user,
   });
   
   // Fetch package types
-  const { data: packageTypes, isLoading: isLoadingPackageTypes } = useQuery({
+  const { data: packageTypes, isLoading: isLoadingPackageTypes } = useQuery<any[]>({
     queryKey: ["/api/package-types"],
     enabled: !!user?.tenantId,
   });

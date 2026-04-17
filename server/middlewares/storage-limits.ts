@@ -64,11 +64,7 @@ export async function checkStorageLimits(
       // Se for um objeto de campos com arquivos
       else if (options.fieldName && req.files[options.fieldName]) {
         const field = req.files[options.fieldName];
-        if (Array.isArray(field)) {
-          fileSize = field.reduce((total, file) => total + file.size, 0);
-        } else {
-          fileSize = field.size;
-        }
+        fileSize = field.reduce((total, file: Express.Multer.File) => total + file.size, 0);
       }
     }
 
@@ -117,19 +113,20 @@ export async function updateStorageUsed(req: Request, res: Response, next: NextF
   const originalEnd = res.end;
 
   // Sobrescrever o método end para atualizar armazenamento apenas se o request for bem-sucedido
-  res.end = function(chunk?: any, encoding?: BufferEncoding, callback?: () => void): Response {
+  res.end = function(...args: any[]): Response {
     const statusCode = res.statusCode;
     
     // Atualiza contador apenas se o upload foi bem-sucedido (códigos 2xx)
     if (statusCode >= 200 && statusCode < 300 && req.user && req.fileSizeMB) {
       const tenantId = req.user.tenantId;
+      const fileSizeMB = req.fileSizeMB;
       
       // Atualizar contador de armazenamento de forma assíncrona (não bloqueia a resposta)
       (async () => {
         try {
           const tenant = await storage.getTenant(tenantId);
           if (tenant) {
-            const newStorageUsed = tenant.storageUsed + req.fileSizeMB;
+            const newStorageUsed = tenant.storageUsed + fileSizeMB;
             await storage.updateTenant(tenantId, { storageUsed: newStorageUsed });
             console.log(`Armazenamento atualizado para tenant ${tenantId}: ${newStorageUsed.toFixed(2)}MB`);
           }
@@ -140,7 +137,8 @@ export async function updateStorageUsed(req: Request, res: Response, next: NextF
     }
     
     // Restaurar comportamento original
-    return originalEnd.call(this, chunk, encoding, callback);
+    // @ts-ignore
+    return originalEnd.apply(this, args);
   };
   
   next();

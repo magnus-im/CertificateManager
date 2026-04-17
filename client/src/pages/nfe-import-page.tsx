@@ -120,7 +120,7 @@ export default function NfeImportPage() {
 
     // Filter products for dropdown
     const filteredProducts = products?.filter(p =>
-        p.technicalName.toLowerCase().includes(productSearch.toLowerCase()) ||
+        p.technicalName?.toLowerCase().includes(productSearch.toLowerCase()) ||
         (p.internalCode && p.internalCode.toLowerCase().includes(productSearch.toLowerCase()))
     ) || [];
 

@@ -21,7 +21,7 @@ import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 interface CertificateTableProps {
-  certificates: EntryCertificate[] | undefined;
+  certificates: any[] | undefined;
   loading: boolean;
   onView: (id: number) => void;
   onEdit: (id: number) => void;

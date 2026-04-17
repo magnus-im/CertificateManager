@@ -22,10 +22,7 @@ export function ProductForm({ productId, defaultBaseProductId, onSuccess }: Prod
   const [formValues, setFormValues] = useState({
     baseProductId: defaultBaseProductId ? defaultBaseProductId.toString() : "",
     sku: "",
-    technicalName: "",
     commercialName: "",
-    internalCode: "",
-    defaultMeasureUnit: "",
     conversionFactor: "",
     netWeight: "",
     grossWeight: "",
@@ -54,10 +51,7 @@ export function ProductForm({ productId, defaultBaseProductId, onSuccess }: Prod
       setFormValues({
         baseProductId: product.baseProductId.toString(),
         sku: product.sku || "",
-        technicalName: product.technicalName,
         commercialName: product.commercialName || "",
-        internalCode: product.internalCode || "",
-        defaultMeasureUnit: product.defaultMeasureUnit,
         conversionFactor: product.conversionFactor?.toString() || "",
         netWeight: product.netWeight?.toString() || "",
         grossWeight: product.grossWeight?.toString() || "",
@@ -75,10 +69,7 @@ export function ProductForm({ productId, defaultBaseProductId, onSuccess }: Prod
     if (productBase && !productId) {
       setFormValues(prev => ({
         ...prev,
-        technicalName: productBase.technicalName,
         commercialName: productBase.commercialName || "",
-        internalCode: productBase.internalCode || "",
-        defaultMeasureUnit: productBase.defaultMeasureUnit,
       }));
     }
   }, [productBase, productId]);
@@ -182,9 +173,6 @@ export function ProductForm({ productId, defaultBaseProductId, onSuccess }: Prod
     <Tabs defaultValue="general">
       <TabsList className="mb-4">
         <TabsTrigger value="general">Informações Gerais</TabsTrigger>
-        {productId && (
-          <TabsTrigger value="characteristics">Características</TabsTrigger>
-        )}
       </TabsList>
       
       <TabsContent value="general">
@@ -223,48 +211,13 @@ export function ProductForm({ productId, defaultBaseProductId, onSuccess }: Prod
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="technicalName">Nome Técnico *</Label>
-              <Input
-                id="technicalName"
-                name="technicalName"
-                value={formValues.technicalName}
-                onChange={handleChange}
-                placeholder="Ex: Ácido Sulfúrico"
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="commercialName">Nome Comercial</Label>
+              <Label htmlFor="commercialName">Nome Comercial (Opcional)</Label>
               <Input
                 id="commercialName"
                 name="commercialName"
                 value={formValues.commercialName}
                 onChange={handleChange}
-                placeholder="Ex: SupraAcid S-98"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="internalCode">Código Interno (ERP)</Label>
-              <Input
-                id="internalCode"
-                name="internalCode"
-                value={formValues.internalCode}
-                onChange={handleChange}
-                placeholder="Ex: AC-0023"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="defaultMeasureUnit">Unidade de Medida Padrão *</Label>
-              <Input
-                id="defaultMeasureUnit"
-                name="defaultMeasureUnit"
-                value={formValues.defaultMeasureUnit}
-                onChange={handleChange}
-                placeholder="Ex: kg"
-                required
+                placeholder="Ex: SupraAcid S-98 Tambor"
               />
             </div>
             
@@ -330,12 +283,6 @@ export function ProductForm({ productId, defaultBaseProductId, onSuccess }: Prod
           </div>
         </form>
       </TabsContent>
-      
-      {productId && (
-        <TabsContent value="characteristics">
-          <ProductCharacteristicsForm productId={productId} />
-        </TabsContent>
-      )}
     </Tabs>
   );
 }
